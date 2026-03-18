@@ -2584,15 +2584,36 @@
       return [1,2,3,4,5,6,7,8,9,10,11,12].map(m => `${year}-${String(m).padStart(2,'0')}`);
     }
 
-    function calcPersonKPI(person, months, role) {
-      const defs = KPI_DEF[role] || KPI_DEF['팀원'];
-      // 일정준수율: 해당 기간 평균
-      const pData = DATA.filter(r => r.person === person);
-      const schedRate = pData.length ? Math.round(pData.reduce((s,r) => s + r.achievementRate, 0) / pData.length) : 0;
+    // 평가 기간의 전체 일정 데이터 캐시
+    let EV_SCHED_CACHE = {};
 
-      // 팀원 관리율
-      const pm = {}; DATA.forEach(r => { if(!pm[r.person]) pm[r.person]={t:0,c:0}; pm[r.person].t+=r.achievementRate; pm[r.person].c++; });
-      const rates = Object.values(pm).map(v => Math.round(v.t/v.c));
+    async function loadScheduleForMonths(months) {
+      // GAS에서 각 월별 데이터를 불러와 캐시
+      const toLoad = months.filter(m => !EV_SCHED_CACHE[m]);
+      for (const ym of toLoad) {
+        if (GAS_URL) {
+          const res = await apiG('getAll', {yearMonth: ym});
+          EV_SCHED_CACHE[ym] = res?.rows || [];
+        } else {
+          // 데모: 현재 DATA에서 yearMonth 매칭
+          EV_SCHED_CACHE[ym] = DATA.filter(r => r.yearMonth === ym);
+        }
+      }
+      // 전체 기간 데이터 합치기
+      let allRows = [];
+      months.forEach(m => { allRows = allRows.concat(EV_SCHED_CACHE[m] || []); });
+      return allRows;
+    }
+
+    function calcPersonKPI(person, months, role, schedData) {
+      const defs = KPI_DEF[role] || KPI_DEF['팀원'];
+      // 일정준수율: 해당 기간 전체 평균
+      const pData = (schedData || DATA).filter(r => r.person === person);
+      const schedRate = pData.length ? Math.round(pData.reduce((s,r) => s + (r.achievementRate||0), 0) / pData.length) : 0;
+
+      // 팀원 관리율: 전체 인원 달성률 기반
+      const pm = {}; (schedData || DATA).forEach(r => { if(!pm[r.person]) pm[r.person]={t:0,c:0}; pm[r.person].t+=(r.achievementRate||0); pm[r.person].c++; });
+      const rates = Object.values(pm).map(v => v.c > 0 ? Math.round(v.t/v.c) : 0);
       const mgrVar = rates.length > 1 ? Math.round(rates.reduce((a,b)=>a+b,0)/rates.length) - Math.min(...rates) : 0;
 
       // 타임시트: 해당 기간 평균
@@ -2622,11 +2643,15 @@
       });
     }
 
-    function renderEvaluation() {
+    async function renderEvaluation() {
       const year = document.getElementById('evYear').value;
       const period = document.getElementById('evPeriod').value;
       const months = getEvMonths(year, period);
       const periodLabel = period==='H1' ? `${year} 상반기` : period==='H2' ? `${year} 하반기` : `${year} 연간`;
+
+      // 기간 전체 일정 데이터 로딩
+      document.getElementById('evalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);">데이터 로딩 중...</div>';
+      const schedData = await loadScheduleForMonths(months);
 
       // Tab styling
       ['evTabSum','evTabDet','evTabCmp'].forEach(id => {
@@ -2634,13 +2659,13 @@
         if(el) el.className = 'pw-btn' + (id === {summary:'evTabSum',detail:'evTabDet',compare:'evTabCmp'}[evTab] ? ' primary' : '');
       });
 
-      if (evTab === 'summary') renderEvSummary(months, periodLabel);
-      else if (evTab === 'detail') renderEvDetail(months, periodLabel, year, period);
+      if (evTab === 'summary') renderEvSummary(months, periodLabel, schedData);
+      else if (evTab === 'detail') renderEvDetail(months, periodLabel, year, period, schedData);
       else if (evTab === 'compare') renderEvCompare(year, period, periodLabel);
     }
 
     // ── ① 종합 등급표 ──
-    function renderEvSummary(months, periodLabel) {
+    function renderEvSummary(months, periodLabel, schedData) {
       let h = `<div style="margin-bottom:16px;font-size:14px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
 
       ['팀장','팀원'].forEach(role => {
@@ -2654,7 +2679,7 @@
         h += `<th style="background:var(--blue-soft);color:var(--blue-deep);">종합점수</th><th style="background:var(--blue-soft);color:var(--blue-deep);">최종등급</th></tr></thead><tbody>`;
 
         members.forEach(m => {
-          const items = calcPersonKPI(m.name, months, role);
+          const items = calcPersonKPI(m.name, months, role, schedData);
           const total = Math.round(items.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
           const fg = total>=4.5?'S':total>=3.5?'A':total>=2.5?'B':total>=1.5?'C':'D';
           h += `<tr><td style="text-align:left;font-weight:600;">${m.name}</td><td style="font-size:12px;color:var(--text-light);">${m.team||''}</td>`;
@@ -2670,7 +2695,7 @@
     }
 
     // ── ② 개인 상세 리포트 ──
-    function renderEvDetail(months, periodLabel, year, period) {
+    function renderEvDetail(months, periodLabel, year, period, schedData) {
       let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
         <select id="evPerson" class="form-select" style="width:160px;" onchange="renderEvaluation()">`;
       MEM.forEach(m => { h += `<option value="${m.name}">${m.name} (${m.position||''})</option>`; });
@@ -2679,7 +2704,7 @@
       const person = document.getElementById('evPerson')?.value || MEM[0]?.name || '';
       const mem = MEM.find(m => m.name === person);
       const role = mem?.position === '팀장' ? '팀장' : '팀원';
-      const items = calcPersonKPI(person, months, role);
+      const items = calcPersonKPI(person, months, role, schedData);
       const total = Math.round(items.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
       const fg = total>=4.5?'S':total>=3.5?'A':total>=2.5?'B':total>=1.5?'C':'D';
 
@@ -2770,13 +2795,17 @@
     }
 
     // ── ③ 기간 비교 ──
-    function renderEvCompare(year, period, periodLabel) {
+    async function renderEvCompare(year, period, periodLabel) {
       // 비교 대상: 상반기 vs 하반기, 또는 전년 동기
       const curMonths = getEvMonths(year, period);
       let cmpLabel, cmpMonths;
       if (period === 'H1') { cmpLabel = `${year} 하반기`; cmpMonths = getEvMonths(year, 'H2'); }
       else if (period === 'H2') { cmpLabel = `${year} 상반기`; cmpMonths = getEvMonths(year, 'H1'); }
       else { cmpLabel = `${Number(year)-1} 연간`; cmpMonths = getEvMonths(String(Number(year)-1), 'YEAR'); }
+
+      // 양쪽 기간 데이터 로딩
+      const curSched = await loadScheduleForMonths(curMonths);
+      const cmpSched = await loadScheduleForMonths(cmpMonths);
 
       let h = `<div style="margin-bottom:16px;font-size:14px;color:var(--text-sub);">📈 기간 비교: <strong>${periodLabel}</strong> vs <strong>${cmpLabel}</strong></div>`;
 
@@ -2791,8 +2820,8 @@
 
       MEM.forEach(m => {
         const role = m.position === '팀장' ? '팀장' : '팀원';
-        const curItems = calcPersonKPI(m.name, curMonths, role);
-        const cmpItems = calcPersonKPI(m.name, cmpMonths, role);
+        const curItems = calcPersonKPI(m.name, curMonths, role, curSched);
+        const cmpItems = calcPersonKPI(m.name, cmpMonths, role, cmpSched);
         const curTotal = Math.round(curItems.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
         const cmpTotal = Math.round(cmpItems.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
         const diff = Math.round((curTotal - cmpTotal) * 100) / 100;
@@ -2818,8 +2847,8 @@
       // 성장/하락 요약
       const allDiffs = MEM.map(m => {
         const role = m.position==='팀장'?'팀장':'팀원';
-        const c = calcPersonKPI(m.name, curMonths, role);
-        const p = calcPersonKPI(m.name, cmpMonths, role);
+        const c = calcPersonKPI(m.name, curMonths, role, curSched);
+        const p = calcPersonKPI(m.name, cmpMonths, role, cmpSched);
         return { name: m.name, diff: Math.round((c.reduce((s,i)=>s+i.weighted,0) - p.reduce((s,i)=>s+i.weighted,0))*100)/100 };
       });
       const up = allDiffs.filter(d => d.diff > 0).sort((a,b) => b.diff - a.diff);
