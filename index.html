@@ -2588,18 +2588,18 @@
     let EV_SCHED_CACHE = {};
 
     async function loadScheduleForMonths(months) {
-      // GAS에서 각 월별 데이터를 불러와 캐시
-      const toLoad = months.filter(m => !EV_SCHED_CACHE[m]);
-      for (const ym of toLoad) {
-        if (GAS_URL) {
-          const res = await apiG('getAll', {yearMonth: ym});
-          EV_SCHED_CACHE[ym] = res?.rows || [];
-        } else {
-          // 데모: 현재 DATA에서 yearMonth 매칭
-          EV_SCHED_CACHE[ym] = DATA.filter(r => r.yearMonth === ym);
+      try {
+        const uncached = months.filter(m => !EV_SCHED_CACHE[m]);
+        if (uncached.length && GAS_URL) {
+          // 1회 호출로 전체 기간 데이터 로드
+          const res = await apiG('getAll', {yearMonth: uncached.join(',')});
+          const rows = res?.rows || [];
+          // 월별로 캐시 분배
+          uncached.forEach(ym => { EV_SCHED_CACHE[ym] = rows.filter(r => r.yearMonth === ym); });
+        } else if (!GAS_URL) {
+          months.forEach(ym => { if (!EV_SCHED_CACHE[ym]) EV_SCHED_CACHE[ym] = DATA.filter(r => r.yearMonth === ym); });
         }
-      }
-      // 전체 기간 데이터 합치기
+      } catch(e) { console.error('loadSchedule error:', e); }
       let allRows = [];
       months.forEach(m => { allRows = allRows.concat(EV_SCHED_CACHE[m] || []); });
       return allRows;
@@ -2644,8 +2644,9 @@
     }
 
     async function renderEvaluation() {
-      const year = document.getElementById('evYear').value;
-      const period = document.getElementById('evPeriod').value;
+      try {
+      const year = document.getElementById('evYear')?.value || '2026';
+      const period = document.getElementById('evPeriod')?.value || 'H1';
       const months = getEvMonths(year, period);
       const periodLabel = period==='H1' ? `${year} 상반기` : period==='H2' ? `${year} 하반기` : `${year} 연간`;
 
@@ -2661,7 +2662,12 @@
 
       if (evTab === 'summary') renderEvSummary(months, periodLabel, schedData);
       else if (evTab === 'detail') renderEvDetail(months, periodLabel, year, period, schedData);
-      else if (evTab === 'compare') renderEvCompare(year, period, periodLabel);
+      else if (evTab === 'compare') await renderEvCompare(year, period, periodLabel);
+      } catch(e) {
+        console.error('renderEvaluation error:', e);
+        const ec = document.getElementById('evalContent');
+        if(ec) ec.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">오류: '+e.message+'</div>';
+      }
     }
 
     // ── ① 종합 등급표 ──
