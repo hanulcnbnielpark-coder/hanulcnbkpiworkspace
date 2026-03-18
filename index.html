@@ -1970,19 +1970,34 @@
     // Timesheet demo from Sheet 2 (monthly avg per person)
     const SW_LIST = ['Revit','Civil3D','공통','Excel','미분류','기타','Q-works','Hwp','Navis','Fuzor','Infra','PPT','Word','AutoCAD','P-works','Trimble','Premiere pro','Twinmotion','Unreal','P6'];
     function genTimesheetDemo() {
-      // 엑셀 Section 2 실데이터 기반 (인당 월평균, 주간+야간 합산)
-      const monthly = [
-        {ym:'2025-06',Revit:93.8,Civil3D:47.5,'공통':10.9,Excel:7.6,'미분류':5.7,'휴가':4.6,'기타':3.6,Hwp:3.0,Navis:1.8,Fuzor:1.6,Infra:1.8,PPT:0.9,AutoCAD:0.6,'P-works':0.4,'Q-works':3.4},
-        {ym:'2025-07',Revit:73.6,Civil3D:38.9,'공통':4.6,Excel:4.7,'미분류':6.4,'휴가':10.7,'기타':28.7,Hwp:9.4,Navis:3.9,Fuzor:8.8,Infra:13.3,PPT:1.6,AutoCAD:1.0,'P-works':0.3,Word:1.8},
+      // 엑셀 Section 2 실데이터 기반 — 인별 월별 데이터
+      const base = [
+        {ym:'2025-06',Revit:93.8,Civil3D:47.5,'공통':10.9,Excel:7.6,'미분류':5.7,'휴가':4.6,'기타':3.6,Hwp:3.0,Navis:1.8,Fuzor:1.6,Infra:1.8,PPT:0.9,AutoCAD:0.6,'P-works':0.4},
+        {ym:'2025-07',Revit:73.6,Civil3D:38.9,'공통':4.6,Excel:4.7,'미분류':6.4,'휴가':10.7,'기타':28.7,Hwp:9.4,Navis:3.9,Fuzor:8.8,Infra:13.3,PPT:1.6,AutoCAD:1.0,'P-works':0.3},
         {ym:'2025-08',Revit:63.3,Civil3D:22.6,'공통':2.4,Excel:8.0,'미분류':8.6,'휴가':9.6,'기타':21.8,Hwp:5.1,Navis:3.1,Fuzor:10.9,Infra:0.4,PPT:2.7,AutoCAD:0.6,'Premiere pro':1.1},
-        {ym:'2025-09',Revit:51.8,Civil3D:19.2,'공통':21.5,Excel:14.3,'미분류':7.8,'휴가':11.1,'기타':30.7,Hwp:1.6,Navis:7.4,Fuzor:4.0,Infra:2.5,PPT:2.1,AutoCAD:3.4,Word:1.9,Twinmotion:0.9},
-        {ym:'2025-10',Revit:36.1,Civil3D:20.5,'공통':18.1,Excel:19.2,'미분류':10.8,'휴가':12.9,'기타':16.1,Hwp:1.6,Navis:0,Fuzor:2.4,Infra:1.7,PPT:3.4,AutoCAD:6.4,'P-works':0.3,Word:1.3,Unreal:0.6,P6:0.3},
+        {ym:'2025-09',Revit:51.8,Civil3D:19.2,'공통':21.5,Excel:14.3,'미분류':7.8,'휴가':11.1,'기타':30.7,Hwp:1.6,Navis:7.4,Fuzor:4.0,Infra:2.5,PPT:2.1,AutoCAD:3.4,Twinmotion:0.9},
+        {ym:'2025-10',Revit:36.1,Civil3D:20.5,'공통':18.1,Excel:19.2,'미분류':10.8,'휴가':12.9,'기타':16.1,Hwp:1.6,Fuzor:2.4,Infra:1.7,PPT:3.4,AutoCAD:6.4,'P-works':0.3,Unreal:0.6,P6:0.3},
         {ym:'2025-11',Revit:63.0,Civil3D:39.4,'공통':7.2,Excel:27.0,'미분류':5.8,'휴가':9.7,'기타':23.9,Hwp:2.0,Navis:2.9,Fuzor:8.3,Infra:1.9,PPT:0.9,AutoCAD:0.6,Unreal:1.4,P6:0.3},
         {ym:'2025-12',Revit:40.0,Civil3D:58.8,'공통':4.3,Excel:16.8,'미분류':13.1,'휴가':16.1,'기타':28.4,Hwp:2.1,Navis:1.3,Fuzor:5.6,Infra:3.4,PPT:0.1,AutoCAD:0.8,P6:0.3},
         {ym:'2026-01',Revit:35.4,Civil3D:31.4,'공통':5.8,Excel:11.6,'미분류':12.3,'휴가':13.1,'기타':22.6,Hwp:5.4,Navis:5.0,Fuzor:5.3,Infra:3.5,PPT:2.3,AutoCAD:1.2,'P-works':1.7,'Premiere pro':0.6,P6:0.6},
         {ym:'2026-02',Revit:27.4,Civil3D:26.2,'공통':2.0,Excel:26.2,'미분류':8.1,'휴가':6.3,'기타':18.5,Hwp:2.5,Navis:4.3,Fuzor:20.4,Infra:0.7,PPT:0.4,AutoCAD:0.5,P6:0.1},
       ];
-      return monthly;
+      // 인별 변동 생성 (데모용)
+      const persons = MEM.length ? MEM : DEMO_M;
+      const rows = [];
+      const swKeys = ['Revit','Civil3D','공통','Excel','미분류','휴가','기타','Hwp','Navis','Fuzor','Infra','PPT','AutoCAD','P-works','Premiere pro','Twinmotion','Unreal','P6','Word','Trimble','Q-works'];
+      base.forEach(m => {
+        persons.forEach((p, pi) => {
+          const row = { ym: m.ym, person: p.name, team: p.team || 'BIM수행팀' };
+          const factor = 0.6 + Math.sin(pi * 1.7 + base.indexOf(m) * 0.5) * 0.5 + Math.random() * 0.2;
+          swKeys.forEach(sw => {
+            const v = m[sw] || 0;
+            row[sw] = Math.round(v * factor * 10) / 10;
+          });
+          rows.push(row);
+        });
+      });
+      return rows;
     }
 
     function genDemo() {
@@ -2037,40 +2052,43 @@
 
     // ─── Timesheet: Fetch from 통합관리 Google Sheets ───
     async function fetchTimesheetFromSheet() {
-      // 1차: KPI 스프레드시트의 타임시트_집계 탭 (수동 붙여넣기 데이터)
       if (GAS_URL) {
         const res = await apiG('getTimesheetSummary');
         if (res?.data?.length && res.data[0].year_month) {
-          // 타임시트_집계 탭 데이터를 프론트 형식으로 변환
-          return aggregateToMonthly(res.data);
+          // 타임시트_집계: 이미 인별×월별 형태 → 그대로 반환
+          return res.data.map(r => ({...r, ym: r.year_month}));
         }
       }
-      // 2차: 유효한 데이터 없으면 데모
       return null;
     }
 
-    function aggregateToMonthly(rows) {
-      // 타임시트_집계: 인별 행 → 월별 평균으로 집계
+    // TIMESHEET 데이터를 월별로 집계 (인원 필터 적용)
+    function getMonthlyTS(personFilter) {
+      let rows = TIMESHEET;
+      if (personFilter) rows = rows.filter(r => r.person === personFilter);
+      // 월별로 GROUP BY → 평균
       const monthly = {};
       rows.forEach(r => {
-        const ym = r.year_month;
+        const ym = r.ym || r.year_month;
         if (!ym) return;
-        if (!monthly[ym]) monthly[ym] = {ym, _count:0};
+        if (!monthly[ym]) monthly[ym] = {ym, _count: 0};
         monthly[ym]._count++;
-        const swList = ['Revit','Civil3D','Fuzor','PPT','Infra','Premiere pro','Navis','AutoCAD','Hwp','Excel','P-works','기타','Q-works','Word','Trimble','Twinmotion','Unreal','P6','공통','미분류','휴가'];
-        swList.forEach(sw => {
-          monthly[ym][sw] = (monthly[ym][sw]||0) + (Number(r[sw])||0);
+        Object.keys(r).forEach(k => {
+          if (k !== 'ym' && k !== 'year_month' && k !== 'person' && k !== 'team' && k !== '_count' && k !== 'total_hours') {
+            const v = Number(r[k]);
+            if (!isNaN(v)) monthly[ym][k] = (monthly[ym][k] || 0) + v;
+          }
         });
       });
-      // 인당 평균으로 변환
+      // 인당 평균 (전체일 때)
       return Object.values(monthly).map(m => {
-        const n = m._count || 1;
+        const n = personFilter ? 1 : (m._count || 1);
         const result = {ym: m.ym};
         Object.keys(m).forEach(k => {
-          if (k !== 'ym' && k !== '_count') result[k] = Math.round((m[k]/n)*10)/10;
+          if (k !== 'ym' && k !== '_count') result[k] = Math.round((m[k] / n) * 10) / 10;
         });
         return result;
-      }).sort((a,b) => a.ym.localeCompare(b.ym));
+      }).sort((a, b) => a.ym.localeCompare(b.ym));
     }
 
     async function refreshData(){
@@ -2335,7 +2353,8 @@
           display=val+'%p';raw=val;
         }
         else if(kpi.type==='timesheet'){
-          const latestTS=TIMESHEET.length>0?TIMESHEET[TIMESHEET.length-1]:{};
+          const personTS=getMonthlyTS(person);
+          const latestTS=personTS.length>0?personTS[personTS.length-1]:{};
           let swTotal=0;(kpi.sw||[]).forEach(sw=>{swTotal+=(latestTS[sw]||0);});
           val=kpi.base>0?Math.round((swTotal/kpi.base)*100):0;
           display=`${swTotal.toFixed(1)}hr / ${kpi.base}hr = ${val}%`;raw=val;
@@ -2412,7 +2431,9 @@
       const curP=sel.value;sel.innerHTML='<option value="">전체 (본부 평균)</option>';
       filtered.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);});
       if(filtered.find(m=>m.name===curP))sel.value=curP;
-      const ts=TIMESHEET;if(!ts.length){document.getElementById('timesheetContent').innerHTML='<div class="empty-pw"><i class="ri-pie-chart-line"></i><p>타임시트 데이터가 없습니다</p></div>';return;}
+      const personF=sel.value||null;
+      const ts=getMonthlyTS(personF);
+      if(!ts.length){document.getElementById('timesheetContent').innerHTML='<div class="empty-pw"><i class="ri-pie-chart-line"></i><p>타임시트 데이터가 없습니다</p></div>';return;}
       const latest=ts[ts.length-1];
 
       // Category calculations
