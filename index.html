@@ -2055,8 +2055,13 @@
       if (GAS_URL) {
         const res = await apiG('getTimesheetSummary');
         if (res?.data?.length && res.data[0].year_month) {
-          // 타임시트_집계: 이미 인별×월별 형태 → 그대로 반환
-          return res.data.map(r => ({...r, ym: r.year_month}));
+          return res.data.map(r => {
+            // ISO날짜 → YYYY-MM 변환
+            let ym = String(r.year_month);
+            if (ym.includes('T')) ym = ym.substring(0, 7);
+            else if (ym.length > 7) ym = ym.substring(0, 7);
+            return {...r, ym};
+          });
         }
       }
       return null;
