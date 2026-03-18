@@ -2035,34 +2035,40 @@
 
     // ─── Timesheet: Fetch from 통합관리 Google Sheets ───
     async function fetchTimesheetFromSheet() {
-      // 통합관리 시트의 타임시트DB 탭에서 gviz/tq 엔드포인트로 직접 조회
-      // 또는 GAS 백엔드에 getTimesheet 액션 추가하여 SpreadsheetApp.openById로 조회
+      // 1차: KPI 스프레드시트의 타임시트_집계 탭 (수동 붙여넣기 데이터)
       if (GAS_URL) {
-        const res = await apiG('getTimesheet');
-        if (res?.data) return res.data;
-      }
-      // Fallback: gviz CSV 직접 fetch (시트가 '링크가 있는 모든 사용자에게 공개'일 때)
-      try {
-        const url = `https://docs.google.com/spreadsheets/d/${TIMESHEET_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=타임시트DB`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const csv = await res.text();
-          return parseTimesheetCSV(csv);
+        const res = await apiG('getTimesheetSummary');
+        if (res?.data?.length && res.data[0].year_month) {
+          // 타임시트_집계 탭 데이터를 프론트 형식으로 변환
+          return aggregateToMonthly(res.data);
         }
-      } catch(e) { console.log('Timesheet fetch failed, using demo data'); }
+      }
+      // 2차: 유효한 데이터 없으면 데모
       return null;
     }
 
-    function parseTimesheetCSV(csv) {
-      // CSV 파싱: 첫 행 헤더, 이후 행이 월별 데이터
-      const lines = csv.split('\n').map(l => l.split(',').map(c => c.replace(/"/g,'').trim()));
-      if (lines.length < 2) return [];
-      const headers = lines[0];
-      return lines.slice(1).filter(r => r[0]).map(row => {
-        const obj = {};
-        headers.forEach((h,i) => { obj[h] = isNaN(row[i]) ? row[i] : Number(row[i]); });
-        return obj;
+    function aggregateToMonthly(rows) {
+      // 타임시트_집계: 인별 행 → 월별 평균으로 집계
+      const monthly = {};
+      rows.forEach(r => {
+        const ym = r.year_month;
+        if (!ym) return;
+        if (!monthly[ym]) monthly[ym] = {ym, _count:0};
+        monthly[ym]._count++;
+        const swList = ['Revit','Civil3D','Fuzor','PPT','Infra','Premiere pro','Navis','AutoCAD','Hwp','Excel','P-works','기타','Q-works','Word','Trimble','Twinmotion','Unreal','P6','공통','미분류','휴가'];
+        swList.forEach(sw => {
+          monthly[ym][sw] = (monthly[ym][sw]||0) + (Number(r[sw])||0);
+        });
       });
+      // 인당 평균으로 변환
+      return Object.values(monthly).map(m => {
+        const n = m._count || 1;
+        const result = {ym: m.ym};
+        Object.keys(m).forEach(k => {
+          if (k !== 'ym' && k !== '_count') result[k] = Math.round((m[k]/n)*10)/10;
+        });
+        return result;
+      }).sort((a,b) => a.ym.localeCompare(b.ym));
     }
 
     async function refreshData(){
@@ -2071,7 +2077,7 @@
       else{DATA=genDemo();PROJ=[...DEMO_P];MEM=[...DEMO_M];EXTERNAL=genExternalDemo();document.getElementById('modeLabel').textContent='데모';document.getElementById('modePill').classList.remove('live');}
       // Timesheet: try live fetch, fallback to demo
       const liveTS = await fetchTimesheetFromSheet();
-      TIMESHEET = liveTS || genTimesheetDemo();
+      TIMESHEET = (liveTS && liveTS.length > 0) ? liveTS : genTimesheetDemo();
       popDD();renderV();toast('데이터를 불러왔습니다','success');
     }
 
