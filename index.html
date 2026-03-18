@@ -1456,6 +1456,16 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media print {
+      body * { visibility: hidden; }
+      #evalPrintArea, #evalPrintArea * { visibility: visible; }
+      #evalPrintArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+      .no-print { display: none !important; }
+      .pw-table { font-size: 11px !important; }
+      .pw-table thead th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+      .rate-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
@@ -1521,6 +1531,11 @@
         <div class="nav-item" data-view="timesheet" onclick="goView('timesheet')">
           <span class="icon"><i class="ri-pie-chart-line"></i></span>
           <span class="label">타임시트 분석</span>
+        </div>
+
+        <div class="nav-item" data-view="evaluation" onclick="goView('evaluation')">
+          <span class="icon"><i class="ri-file-chart-line"></i></span>
+          <span class="label">평가 리포트</span>
         </div>
       </div>
 
@@ -1767,6 +1782,29 @@
           </div>
 
 
+          <!-- 평가 리포트 -->
+          <div class="view-panel" id="view-evaluation">
+            <div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">평가 리포트</span>
+              <span class="s-unit">상·하반기 인사평가용 KPI 종합 리포트</span></div>
+            <div class="database-controls" style="margin-bottom:14px;gap:8px;flex-wrap:wrap;">
+              <select id="evYear" class="form-select" style="width:100px;" onchange="renderEvaluation()">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+              </select>
+              <select id="evPeriod" class="form-select" style="width:160px;" onchange="renderEvaluation()">
+                <option value="H1">상반기 (1~6월)</option>
+                <option value="H2">하반기 (7~12월)</option>
+                <option value="YEAR">연간</option>
+              </select>
+              <div style="display:flex;gap:4px;margin-left:auto;">
+                <button class="pw-btn" onclick="evTab='summary';renderEvaluation()" id="evTabSum" style="font-size:13px;">종합 등급표</button>
+                <button class="pw-btn" onclick="evTab='detail';renderEvaluation()" id="evTabDet" style="font-size:13px;">개인 리포트</button>
+                <button class="pw-btn" onclick="evTab='compare';renderEvaluation()" id="evTabCmp" style="font-size:13px;">기간 비교</button>
+              </div>
+            </div>
+            <div id="evalContent"></div>
+          </div>
+
           <!-- Settings -->
           <div class="view-panel" id="view-settings">
             <div class="section-header" style="margin-bottom: 16px;">
@@ -1871,8 +1909,8 @@
 
     // Role → 접근 가능 뷰 매핑
     const ROLE_VIEWS = {
-      admin:   ['overview','monthly','daily','person','scorecard','timesheet','settings'],
-      manager: ['overview','monthly','daily','person','scorecard','timesheet'],
+      admin:   ['overview','monthly','daily','person','scorecard','timesheet','evaluation','settings'],
+      manager: ['overview','monthly','daily','person','scorecard','timesheet','evaluation'],
       user:    ['overview','monthly','daily','person'],
       viewer:  ['overview','person'],
     };
@@ -2117,6 +2155,7 @@
       person:{title:'인별 현황',sub:'팀원별 업무 달성률과 투입 현황을 비교합니다.',icon:'ri-team-line'},
       scorecard:{title:'KPI 스코어카드',sub:'5개 KPI 항목별 가중치 기반 종합 등급을 산정합니다.',icon:'ri-medal-line'},
       timesheet:{title:'타임시트 분석',sub:'소프트웨어별 업무 수행시간과 KPI 카테고리별 달성률을 분석합니다.',icon:'ri-pie-chart-line'},
+      evaluation:{title:'평가 리포트',sub:'상·하반기 인사평가용 KPI 종합 리포트를 생성합니다.',icon:'ri-file-chart-line'},
       settings:{title:'기본정보관리',sub:'Google Sheets 연결, 프로젝트 및 인원 정보를 관리합니다.',icon:'ri-settings-3-line'},
     };
 
@@ -2126,7 +2165,7 @@
       const m=viewMeta[v];if(m){document.getElementById('pageTitle').textContent=m.title;document.getElementById('pageSubtitle').textContent=m.sub;document.getElementById('pageIcon').innerHTML=`<i class="${m.icon}"></i>`;}
       renderV();
     }
-    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,scorecard:renderScorecard,timesheet:renderTimesheet,settings:renderStg}[VIEW]||(_=>{}))();}
+    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,scorecard:renderScorecard,timesheet:renderTimesheet,evaluation:renderEvaluation,settings:renderStg}[VIEW]||(_=>{}))();}
     function changeMonth(d){M+=d;if(M>12){M=1;Y++;}if(M<1){M=12;Y--;}updML();refreshData();}
     function updML(){const s=`${Y}년 ${String(M).padStart(2,'0')}월`;document.getElementById('monthLabel').textContent=s;document.getElementById('pageMonthLabel').textContent=s;}
 
@@ -2532,6 +2571,270 @@
         apiP({action:'saveExternal',person,yearMonth:`${Y}-${String(M).padStart(2,'0')}`,...EXTERNAL[person]});
       }
       toast('외부실적이 저장되었습니다','success');
+    }
+
+    // ════════════════════════════════════════
+    // 평가 리포트 (상·하반기)
+    // ════════════════════════════════════════
+    let evTab = 'summary';
+
+    function getEvMonths(year, period) {
+      if (period === 'H1') return [1,2,3,4,5,6].map(m => `${year}-${String(m).padStart(2,'0')}`);
+      if (period === 'H2') return [7,8,9,10,11,12].map(m => `${year}-${String(m).padStart(2,'0')}`);
+      return [1,2,3,4,5,6,7,8,9,10,11,12].map(m => `${year}-${String(m).padStart(2,'0')}`);
+    }
+
+    function calcPersonKPI(person, months, role) {
+      const defs = KPI_DEF[role] || KPI_DEF['팀원'];
+      // 일정준수율: 해당 기간 평균
+      const pData = DATA.filter(r => r.person === person);
+      const schedRate = pData.length ? Math.round(pData.reduce((s,r) => s + r.achievementRate, 0) / pData.length) : 0;
+
+      // 팀원 관리율
+      const pm = {}; DATA.forEach(r => { if(!pm[r.person]) pm[r.person]={t:0,c:0}; pm[r.person].t+=r.achievementRate; pm[r.person].c++; });
+      const rates = Object.values(pm).map(v => Math.round(v.t/v.c));
+      const mgrVar = rates.length > 1 ? Math.round(rates.reduce((a,b)=>a+b,0)/rates.length) - Math.min(...rates) : 0;
+
+      // 타임시트: 해당 기간 평균
+      const personTS = getMonthlyTS(person);
+      const periodTS = personTS.filter(r => months.includes(r.ym));
+      const avgTS = {};
+      if (periodTS.length) {
+        const swAll = ['Civil3D','P-works','Fuzor','PPT','Infra','Premiere pro','Twinmotion','Unreal','Revit','Navis','AutoCAD','Hwp','Excel','기타','공통','미분류','휴가','Word','Trimble','P6'];
+        swAll.forEach(sw => { avgTS[sw] = Math.round(periodTS.reduce((s,r) => s + (r[sw]||0), 0) / periodTS.length * 10) / 10; });
+      }
+
+      return defs.map(kpi => {
+        let val=0, raw=0;
+        if (kpi.type==='auto' && (kpi.id==='schedule'||kpi.id==='billing_all')) { raw = schedRate; }
+        else if (kpi.type==='auto' && (kpi.id==='manage'||kpi.id==='manage_dept'||kpi.id==='manage_team')) { raw = mgrVar; }
+        else if (kpi.type==='timesheet') {
+          let swT = 0; (kpi.sw||[]).forEach(sw => { swT += (avgTS[sw]||0); });
+          raw = kpi.base > 0 ? Math.round((swT/kpi.base)*100) : 0;
+        }
+        else if (kpi.type==='count') { raw = (EXTERNAL[person]||{})[kpi.id] || 0; }
+        else if (kpi.type==='rate') { raw = (EXTERNAL[person]||{}).billingRate || 0; }
+
+        let grade = 'D';
+        if (kpi.grades[0].hasOwnProperty('min')) { for(const g of kpi.grades){ if(raw>=g.min){grade=g.g;break;} } }
+        else { for(const g of kpi.grades){ if(raw<=g.max){grade=g.g;break;} } }
+        return { ...kpi, raw, grade, score: GRADE_SCORE[grade], weighted: Math.round(GRADE_SCORE[grade] * kpi.weight * 100) / 100 };
+      });
+    }
+
+    function renderEvaluation() {
+      const year = document.getElementById('evYear').value;
+      const period = document.getElementById('evPeriod').value;
+      const months = getEvMonths(year, period);
+      const periodLabel = period==='H1' ? `${year} 상반기` : period==='H2' ? `${year} 하반기` : `${year} 연간`;
+
+      // Tab styling
+      ['evTabSum','evTabDet','evTabCmp'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.className = 'pw-btn' + (id === {summary:'evTabSum',detail:'evTabDet',compare:'evTabCmp'}[evTab] ? ' primary' : '');
+      });
+
+      if (evTab === 'summary') renderEvSummary(months, periodLabel);
+      else if (evTab === 'detail') renderEvDetail(months, periodLabel, year, period);
+      else if (evTab === 'compare') renderEvCompare(year, period, periodLabel);
+    }
+
+    // ── ① 종합 등급표 ──
+    function renderEvSummary(months, periodLabel) {
+      let h = `<div style="margin-bottom:16px;font-size:14px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
+
+      ['팀장','팀원'].forEach(role => {
+        const members = role==='팀장' ? MEM.filter(m=>m.position==='팀장') : MEM.filter(m=>m.position!=='팀장');
+        if (!members.length) return;
+        const defs = KPI_DEF[role] || KPI_DEF['팀원'];
+
+        h += `<div style="margin-bottom:24px;"><div style="font-size:15px;font-weight:700;margin-bottom:10px;">${role} KPI (${members.length}명)</div>`;
+        h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th style="text-align:left;">이름</th><th>팀</th>`;
+        defs.forEach(d => { h += `<th style="font-size:12px;">${d.name.replace(' 수행률','').replace(' 준수율','')}<br><span style="font-weight:400;font-size:11px;">${(d.weight*100).toFixed(0)}%</span></th>`; });
+        h += `<th style="background:var(--blue-soft);color:var(--blue-deep);">종합점수</th><th style="background:var(--blue-soft);color:var(--blue-deep);">최종등급</th></tr></thead><tbody>`;
+
+        members.forEach(m => {
+          const items = calcPersonKPI(m.name, months, role);
+          const total = Math.round(items.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
+          const fg = total>=4.5?'S':total>=3.5?'A':total>=2.5?'B':total>=1.5?'C':'D';
+          h += `<tr><td style="text-align:left;font-weight:600;">${m.name}</td><td style="font-size:12px;color:var(--text-light);">${m.team||''}</td>`;
+          items.forEach(it => {
+            h += `<td><span class="rate-badge ${it.grade==='S'||it.grade==='A'?'high':it.grade==='B'?'mid':'danger'}" style="min-width:28px;">${it.grade}</span><br><span style="font-size:11px;color:var(--text-light);">${it.raw}${it.type==='count'?'건':'%'}</span></td>`;
+          });
+          h += `<td style="font-weight:800;">${total.toFixed(1)}</td>`;
+          h += `<td><span class="rate-badge ${fg==='S'||fg==='A'?'high':fg==='B'?'mid':'danger'}" style="font-size:15px;padding:6px 14px;">${fg}</span></td></tr>`;
+        });
+        h += '</tbody></table></div></div>';
+      });
+      document.getElementById('evalContent').innerHTML = h;
+    }
+
+    // ── ② 개인 상세 리포트 ──
+    function renderEvDetail(months, periodLabel, year, period) {
+      let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
+        <select id="evPerson" class="form-select" style="width:160px;" onchange="renderEvaluation()">`;
+      MEM.forEach(m => { h += `<option value="${m.name}">${m.name} (${m.position||''})</option>`; });
+      h += `</select><button class="pw-btn primary" onclick="window.print()" style="margin-left:auto;"><i class="ri-printer-line"></i> 인쇄 / PDF</button></div>`;
+
+      const person = document.getElementById('evPerson')?.value || MEM[0]?.name || '';
+      const mem = MEM.find(m => m.name === person);
+      const role = mem?.position === '팀장' ? '팀장' : '팀원';
+      const items = calcPersonKPI(person, months, role);
+      const total = Math.round(items.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
+      const fg = total>=4.5?'S':total>=3.5?'A':total>=2.5?'B':total>=1.5?'C':'D';
+
+      h += `<div id="evalPrintArea">`;
+      // Header
+      h += `<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--text);">
+        <div><div style="font-size:20px;font-weight:800;">KPI 인사평가 리포트</div>
+        <div style="font-size:14px;color:var(--text-sub);margin-top:4px;">HANUL C&B BIM사업본부 · ${periodLabel}</div></div>
+        <div style="text-align:right;"><div style="font-size:18px;font-weight:700;">${person}</div>
+        <div style="font-size:13px;color:var(--text-light);">${mem?.position||''} · ${mem?.team||''}</div></div></div>`;
+
+      // Score summary
+      h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div style="padding:16px;border:1px solid var(--border);border-radius:14px;">
+          <div style="font-size:13px;color:var(--text-light);">종합 KPI 점수</div>
+          <div style="font-size:32px;font-weight:800;margin-top:4px;">${total.toFixed(1)}<span style="font-size:16px;font-weight:400;color:var(--text-sub);"> / 5.0</span></div>
+          <div class="pw-progress-track" style="margin-top:8px;"><div class="pw-progress-fill" style="width:${total/5*100}%;background:${GRADE_COLOR[fg]}"></div></div>
+        </div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:14px;">
+          <div style="font-size:13px;color:var(--text-light);">최종 등급</div>
+          <div style="font-size:48px;font-weight:800;color:${GRADE_COLOR[fg]};margin-top:4px;">${fg}</div>
+          <div style="font-size:12px;color:var(--text-light);">S≥4.5 A≥3.5 B≥2.5 C≥1.5</div>
+        </div>
+      </div>`;
+
+      // KPI detail table
+      h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th style="text-align:left;">KPI 항목</th><th>가중치</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
+      items.forEach(it => {
+        h += `<tr><td style="text-align:left;font-weight:600;">${it.name}</td><td>${(it.weight*100).toFixed(0)}%</td>`;
+        h += `<td style="font-weight:600;">${it.raw}${it.type==='count'?'건':'%'}</td>`;
+        h += `<td><span class="rate-badge ${it.grade==='S'||it.grade==='A'?'high':it.grade==='B'?'mid':'danger'}">${it.grade}</span></td>`;
+        h += `<td>${it.score}</td><td style="font-weight:700;">${it.weighted.toFixed(2)}</td></tr>`;
+      });
+      h += `<tr class="total-row"><td style="text-align:left;font-weight:800;">합계</td><td>100%</td><td></td>`;
+      h += `<td><span class="rate-badge ${fg==='S'||fg==='A'?'high':fg==='B'?'mid':'danger'}">${fg}</span></td><td></td><td style="font-weight:800;">${total.toFixed(2)}</td></tr>`;
+      h += '</tbody></table></div>';
+
+      // Radar chart
+      h += `<div style="max-width:400px;margin:20px auto;"><canvas id="chartEvRadar" height="280"></canvas></div>`;
+
+      // Monthly trend
+      const personTS = getMonthlyTS(person);
+      const periodTS = personTS.filter(r => months.includes(r.ym));
+      if (periodTS.length) {
+        h += `<div style="margin-top:20px;"><div style="font-size:14px;font-weight:700;margin-bottom:10px;">월별 추이</div>`;
+        h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th>월</th><th>Civil3D</th><th>Fuzor</th><th>Revit</th><th>PPT</th><th>Infra</th><th>Excel</th></tr></thead><tbody>`;
+        periodTS.forEach(r => {
+          h += `<tr><td style="font-weight:600;">${r.ym}</td>`;
+          ['Civil3D','Fuzor','Revit','PPT','Infra','Excel'].forEach(sw => {
+            const v = r[sw]||0; h += `<td style="${v>10?'font-weight:600;':''}">${v>0?v.toFixed(1):'-'}</td>`;
+          });
+          h += '</tr>';
+        });
+        h += '</tbody></table></div></div>';
+      }
+
+      h += `<div style="margin-top:24px;font-size:11px;color:var(--text-light);text-align:center;">본 리포트는 KPI 관리 시스템에서 자동 생성되었습니다. · HANUL C&B BIM사업본부</div>`;
+      h += '</div>'; // end evalPrintArea
+
+      document.getElementById('evalContent').innerHTML = h;
+
+      // Render radar chart
+      setTimeout(() => {
+        const ctx = document.getElementById('chartEvRadar');
+        if (!ctx) return;
+        new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: items.map(i => i.name.replace(' 수행률','').replace(' 준수율','')),
+            datasets: [{
+              label: person,
+              data: items.map(i => i.score),
+              backgroundColor: 'rgba(35,131,226,0.15)',
+              borderColor: '#2383e2',
+              borderWidth: 2,
+              pointBackgroundColor: '#2383e2',
+              pointRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { r: { beginAtZero: true, max: 5, ticks: { stepSize: 1 }, grid: { color: 'rgba(55,53,47,0.08)' } } }
+          }
+        });
+      }, 100);
+    }
+
+    // ── ③ 기간 비교 ──
+    function renderEvCompare(year, period, periodLabel) {
+      // 비교 대상: 상반기 vs 하반기, 또는 전년 동기
+      const curMonths = getEvMonths(year, period);
+      let cmpLabel, cmpMonths;
+      if (period === 'H1') { cmpLabel = `${year} 하반기`; cmpMonths = getEvMonths(year, 'H2'); }
+      else if (period === 'H2') { cmpLabel = `${year} 상반기`; cmpMonths = getEvMonths(year, 'H1'); }
+      else { cmpLabel = `${Number(year)-1} 연간`; cmpMonths = getEvMonths(String(Number(year)-1), 'YEAR'); }
+
+      let h = `<div style="margin-bottom:16px;font-size:14px;color:var(--text-sub);">📈 기간 비교: <strong>${periodLabel}</strong> vs <strong>${cmpLabel}</strong></div>`;
+
+      h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr>
+        <th style="text-align:left;">이름</th><th>팀</th><th>직급</th>
+        <th style="background:#f0f8ff;">${cmpLabel}<br>종합점수</th>
+        <th style="background:#fff8f0;">${periodLabel}<br>종합점수</th>
+        <th>변동</th>
+        <th>${cmpLabel}<br>등급</th>
+        <th>${periodLabel}<br>등급</th>
+      </tr></thead><tbody>`;
+
+      MEM.forEach(m => {
+        const role = m.position === '팀장' ? '팀장' : '팀원';
+        const curItems = calcPersonKPI(m.name, curMonths, role);
+        const cmpItems = calcPersonKPI(m.name, cmpMonths, role);
+        const curTotal = Math.round(curItems.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
+        const cmpTotal = Math.round(cmpItems.reduce((s,i) => s + i.weighted, 0) * 100) / 100;
+        const diff = Math.round((curTotal - cmpTotal) * 100) / 100;
+        const curG = curTotal>=4.5?'S':curTotal>=3.5?'A':curTotal>=2.5?'B':curTotal>=1.5?'C':'D';
+        const cmpG = cmpTotal>=4.5?'S':cmpTotal>=3.5?'A':cmpTotal>=2.5?'B':cmpTotal>=1.5?'C':'D';
+        const diffColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text-light)';
+        const diffIcon = diff > 0 ? '▲' : diff < 0 ? '▼' : '—';
+
+        h += `<tr>
+          <td style="text-align:left;font-weight:600;">${m.name}</td>
+          <td style="font-size:12px;color:var(--text-light);">${m.team||''}</td>
+          <td style="font-size:12px;">${m.position||''}</td>
+          <td style="background:#f8fbff;">${cmpTotal.toFixed(1)}</td>
+          <td style="background:#fffaf5;font-weight:700;">${curTotal.toFixed(1)}</td>
+          <td style="font-weight:700;color:${diffColor};font-size:14px;">${diffIcon} ${Math.abs(diff).toFixed(1)}</td>
+          <td><span class="rate-badge ${cmpG==='S'||cmpG==='A'?'high':cmpG==='B'?'mid':'danger'}">${cmpG}</span></td>
+          <td><span class="rate-badge ${curG==='S'||curG==='A'?'high':curG==='B'?'mid':'danger'}">${curG}</span></td>
+        </tr>`;
+      });
+
+      h += '</tbody></table></div>';
+
+      // 성장/하락 요약
+      const allDiffs = MEM.map(m => {
+        const role = m.position==='팀장'?'팀장':'팀원';
+        const c = calcPersonKPI(m.name, curMonths, role);
+        const p = calcPersonKPI(m.name, cmpMonths, role);
+        return { name: m.name, diff: Math.round((c.reduce((s,i)=>s+i.weighted,0) - p.reduce((s,i)=>s+i.weighted,0))*100)/100 };
+      });
+      const up = allDiffs.filter(d => d.diff > 0).sort((a,b) => b.diff - a.diff);
+      const down = allDiffs.filter(d => d.diff < 0).sort((a,b) => a.diff - b.diff);
+
+      h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+        <div style="padding:16px;border:1px solid var(--border);border-radius:14px;">
+          <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:8px;">▲ 성장 ${up.length}명</div>`;
+      up.slice(0,5).forEach(d => { h += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${d.name}</span><span style="color:var(--green);font-weight:600;">+${d.diff.toFixed(1)}</span></div>`; });
+      h += `</div><div style="padding:16px;border:1px solid var(--border);border-radius:14px;">
+          <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:8px;">▼ 하락 ${down.length}명</div>`;
+      down.slice(0,5).forEach(d => { h += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${d.name}</span><span style="color:var(--red);font-weight:600;">${d.diff.toFixed(1)}</span></div>`; });
+      h += '</div></div>';
+
+      document.getElementById('evalContent').innerHTML = h;
     }
 
     // ════════════════════════════════════════
