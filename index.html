@@ -2500,7 +2500,17 @@
       h+='</div></div>';
       // 인원
       h+=`<div class="settings-block"><h3><i class="ri-team-line"></i> 인원 관리</h3><div class="config-row" style="gap:6px;"><div class="form-group"><input type="text" id="nMN" class="form-input" placeholder="이름"></div><div class="form-group" style="max-width:110px;"><input type="text" id="nMT" class="form-input" placeholder="팀 (BIM수행팀)" value="BIM수행팀"></div><div class="form-group" style="max-width:100px;"><input type="text" id="nMP" class="form-input" placeholder="직급"></div><button class="pw-btn" onclick="addMem()"><i class="ri-add-line"></i></button></div><div class="list-block">`;
-      MEM.forEach((m,i)=>{h+=`<div class="list-row" style="justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><i class="ri-user-3-line" style="color:var(--text-light);font-size:14px;"></i><span>${m.name}</span><span class="tag" style="font-size:10px;color:var(--text-light);">${m.team||''}</span></div><div style="display:flex;gap:4px;align-items:center;"><select class="form-select" style="width:70px;height:26px;font-size:10px;padding:0 4px;border-radius:6px;" onchange="chMemPos(${i},this.value)">${['팀장','책임','선임','대리','주임','사원','인턴'].map(p=>`<option value="${p}"${m.position===p?' selected':''}>${p}</option>`).join('')}</select><button onclick="delMem(${i})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:14px;padding:2px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'"><i class="ri-delete-bin-line"></i></button></div></div>`;});
+      MEM.forEach((m,i)=>{h+=`<div class="list-row" style="justify-content:space-between;padding:6px 10px;">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+          <i class="ri-user-3-line" style="color:var(--text-light);font-size:13px;flex-shrink:0;"></i>
+          <span style="font-weight:500;">${m.name}</span>
+          <span style="font-size:10px;color:var(--text-light);background:var(--bg-muted);padding:1px 6px;border-radius:4px;">${m.team||''}</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          <select class="form-select" style="width:68px;height:24px;font-size:10px;padding:0 4px;border-radius:6px;" onchange="chMemPos(${i},this.value)">${['팀장','책임','선임','대리','주임','사원','인턴'].map(p=>`<option value="${p}"${m.position===p?' selected':''}>${p}</option>`).join('')}</select>
+          <button onclick="editMemDialog(${i})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:13px;padding:2px;" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text-light)'" title="수정"><i class="ri-edit-line"></i></button>
+          <button onclick="delMem(${i})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:13px;padding:2px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'" title="삭제"><i class="ri-delete-bin-line"></i></button>
+        </div></div>`;});
       h+='</div></div>';
       // 계정
       const accts=window._accts||[{uid:'admin',nm:'관리자',rl:'admin'},{uid:'manager',nm:'팀장',rl:'manager'},{uid:'bim',nm:'BIM수행팀',rl:'user'}];
@@ -2520,6 +2530,24 @@
     // ── Member CRUD ──
     async function addMem(){try{const n=document.getElementById('nMN').value.trim(),p=document.getElementById('nMP')?.value.trim()||'',t=document.getElementById('nMT')?.value.trim()||'BIM수행팀';if(!n){toast('이름을 입력하세요','error');return;}if(GAS_URL){const res=await apiP({action:'addMember',name:n,team:t,position:p});if(res?.error){toast('저장 실패: '+res.error,'error');return;}await refreshData();}else{MEM.push({name:n,team:t,position:p});}document.getElementById('nMN').value='';if(document.getElementById('nMP'))document.getElementById('nMP').value='';renderStg();toast('인원 추가: '+n,'success');}catch(e){toast('오류: '+e.message,'error');console.error('addMem error:',e);}}
     async function chMemPos(i,p){if(GAS_URL){await apiP({action:'updateMember',name:MEM[i].name,position:p});await refreshData();}else{MEM[i].position=p;}toast('직급 변경','success');}
+    async function editMemDialog(i){
+      const m=MEM[i];
+      const newName=prompt('이름:',m.name);if(!newName)return;
+      const newTeam=prompt('팀:',m.team||'');if(newTeam===null)return;
+      if(GAS_URL){
+        // 이름 변경은 키값이라 삭제 후 재추가
+        if(newName!==m.name){
+          await apiP({action:'deleteMember',name:m.name});
+          await apiP({action:'addMember',name:newName,team:newTeam,position:m.position});
+        }else{
+          await apiP({action:'updateMember',name:m.name,team:newTeam});
+        }
+        await refreshData();
+      }else{
+        MEM[i].name=newName;MEM[i].team=newTeam;
+      }
+      renderStg();toast('인원 수정 완료','success');
+    }
     async function delMem(i){if(!confirm(`"${MEM[i].name}" 삭제?`))return;if(GAS_URL){await apiP({action:'deleteMember',name:MEM[i].name});await refreshData();}else{MEM.splice(i,1);}renderStg();toast('삭제됨','success');}
 
     // ── Account CRUD ──
@@ -2542,7 +2570,7 @@
     async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseInt(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}if(GAS_URL){await apiP({action:'saveRow',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}});refreshData();}else{DATA.push({rowIndex:DATA.length+2,yearMonth:ym,project:proj,task,person,targetDays:target,days:{},totalWorked:0,achievementRate:0});renderV();}closeModal();document.getElementById('mdlTask').value='';toast('등록 완료','success');}
 
     // ─── Settings ───
-    function saveGas(){GAS_URL=document.getElementById('gasIn').value.trim();setCk('gas_url',GAS_URL,365);if(GAS_URL){toast('GAS 연결됨 — 다시 로그인합니다','success');setTimeout(()=>logout(),1000);}else{toast('데모 모드','info');refreshData();}}
+    function saveGas(){GAS_URL=document.getElementById('gasIn').value.trim();setCk('gas_url',GAS_URL,365);if(GAS_URL){toast('GAS 연결됨','success');refreshData();}else{toast('데모 모드','info');refreshData();}}
 
     // ─── Utils ───
     function rateCol(r){return r>=100?'var(--green)':r>=80?'var(--blue)':r>=60?'var(--orange)':'var(--red)';}
