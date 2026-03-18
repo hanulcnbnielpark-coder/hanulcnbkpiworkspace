@@ -112,23 +112,14 @@
     .workspace-logo {
       width: 36px;
       height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
+      border-radius: 0;
+      border: none;
+      background: transparent;
       flex-shrink: 0;
-      line-height: 1;
     }
 
     .workspace-logo span {
-      font-size: 9px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      display: none;
     }
 
     .workspace-copy {
@@ -2134,7 +2125,7 @@
     }
 
     function scl(ri,col,val){const r=DATA.find(x=>x.rowIndex===ri);if(!r)return;if(col.startsWith('day_')){const d=parseInt(col.replace('day_',''));r.days[d]=val;r.totalWorked=Object.values(r.days).reduce((s,v)=>s+v,0);r.achievementRate=r.targetDays>0?Math.round((r.totalWorked/r.targetDays)*100):0;}else if(col==='targetDays'){r.targetDays=val;r.achievementRate=val>0?Math.round((r.totalWorked/val)*100):0;}}
-    async function saveC(ri,col,val){scl(ri,col,val);if(GAS_URL)await apiP({action:'saveCell',rowIndex:ri,column:col,value:Number(val)});if(VIEW==='overview')renderOV();}
+    async function saveC(ri,col,val){scl(ri,col,val);if(GAS_URL)apiP({action:'saveCell',rowIndex:ri,column:col,value:Number(val)});if(VIEW==='overview')renderOV();}
 
     // ─── View Management ───
     const viewMeta={
@@ -2301,9 +2292,10 @@
     // ── Row CRUD ──
     async function deleteDataRow(rowIndex){
       if(!confirm('이 업무 행을 삭제하시겠습니까?'))return;
-      if(GAS_URL){await apiP({action:'deleteRow',rowIndex});await refreshData();}
-      else{DATA=DATA.filter(r=>r.rowIndex!==rowIndex);renderV();}
+      const removed=DATA.find(r=>r.rowIndex===rowIndex);
+      DATA=DATA.filter(r=>r.rowIndex!==rowIndex);renderV();
       toast('행이 삭제되었습니다','success');
+      if(GAS_URL)apiP({action:'deleteRow',rowIndex}).then(r=>{if(r?.error){DATA.push(removed);renderV();toast('서버 삭제 실패','error');}});
     }
 
     async function editMeta(el){
@@ -2313,7 +2305,7 @@
       row[field]=val;
       if(GAS_URL){
         const col=field==='task'?3:field==='person'?4:0;
-        if(col) await apiP({action:'saveCell',rowIndex:ri,column:field,value:val});
+        if(col) apiP({action:'saveCell',rowIndex:ri,column:field,value:val});
       }
       if(oldVal!==val) toast(`${field==='task'?'업무명':'담당자'} 수정됨`,'success');
     }
@@ -2935,7 +2927,7 @@
     function openAddModal(){popDD();document.getElementById('addModal').classList.add('open');}
     function closeModal(){document.getElementById('addModal').classList.remove('open');}
     function popDD(){const ps=document.getElementById('mdlProject'),pm=document.getElementById('mdlPerson');ps.innerHTML='';PROJ.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});pm.innerHTML='';MEM.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=`${m.name} (${m.position||''})`;pm.appendChild(o);});}
-    async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseInt(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}if(GAS_URL){await apiP({action:'saveRow',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}});refreshData();}else{DATA.push({rowIndex:DATA.length+2,yearMonth:ym,project:proj,task,person,targetDays:target,days:{},totalWorked:0,achievementRate:0});renderV();}closeModal();document.getElementById('mdlTask').value='';toast('등록 완료','success');}
+    async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseInt(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}const newRow={rowIndex:DATA.length+2,yearMonth:ym,project:proj,task,person,targetDays:target,days:{},totalWorked:0,achievementRate:0};DATA.push(newRow);closeModal();document.getElementById('mdlTask').value='';renderV();toast('등록 완료','success');if(GAS_URL)apiP({action:'saveRow',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}}).then(r=>{if(r?.success&&r.rowIndex)newRow.rowIndex=r.rowIndex;if(r?.error)toast('서버 저장 실패','error');});}
 
     // ─── Settings ───
     function saveGas(){GAS_URL=document.getElementById('gasIn').value.trim();setCk('gas_url',GAS_URL,365);if(GAS_URL){toast('GAS 연결됨','success');refreshData();}else{toast('데모 모드','info');refreshData();}}
