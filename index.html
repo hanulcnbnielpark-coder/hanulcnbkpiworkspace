@@ -1757,6 +1757,7 @@
               <select id="tsPerson" class="form-select" style="width:140px;" onchange="renderTimesheet()">
                 <option value="">전체 (본부 평균)</option>
               </select>
+              <button class="pw-btn" onclick="runAggregate()" style="margin-left:auto;"><i class="ri-refresh-line"></i> 타임시트 집계 실행</button>
             </div>
             <div id="timesheetContent"></div>
             <div class="chart-row" style="margin-top:16px;">
@@ -1947,8 +1948,8 @@
       '팀원': [
         {id:'schedule',  name:'개인 일정 준수율',    weight:0.20, type:'auto', grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
         {id:'high',      name:'고강도 업무 수행률',   weight:0.40, type:'timesheet', desc:'Civil3D+P-works+Fuzor / 50hr', base:50, sw:['Civil3D','P-works','Fuzor'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
-        {id:'creative',  name:'창조적 업무 수행률',   weight:0.15, type:'timesheet', desc:'PPT+Infra+Premiere / 13hr', base:13, sw:['PPT','Infra','Premiere pro'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
-        {id:'basic',     name:'기본적 업무 수행률',   weight:0.15, type:'timesheet', desc:'Revit+Navis+AutoCAD+Hwp+Excel+기타 / 113hr', base:113, sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
+        {id:'creative',  name:'창조적 업무 수행률',   weight:0.15, type:'timesheet', desc:'PPT+Infra+Twinmotion+Unreal+Premiere / 13hr', base:13, sw:['PPT','Infra','Premiere pro','Twinmotion','Unreal'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
+        {id:'basic',     name:'기본적 업무 수행률',   weight:0.15, type:'timesheet', desc:'Revit+Navis+AutoCAD+Hwp+Excel+(공통+미분류+휴가+기타+Word+Trimble+P6) / 113hr', base:113, sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타','공통','미분류','휴가','Word','Trimble','P6'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
         {id:'billing',   name:'기성지급 기여율',      weight:0.10, type:'count', desc:'2인이하 기성 수행건수', grades:[{g:'S',min:4},{g:'A',min:3},{g:'B',min:2},{g:'C',min:1},{g:'D',min:0}]},
       ],
       '총괄팀장': [
@@ -1969,16 +1970,17 @@
     // Timesheet demo from Sheet 2 (monthly avg per person)
     const SW_LIST = ['Revit','Civil3D','공통','Excel','미분류','기타','Q-works','Hwp','Navis','Fuzor','Infra','PPT','Word','AutoCAD','P-works','Trimble','Premiere pro','Twinmotion','Unreal','P6'];
     function genTimesheetDemo() {
+      // 엑셀 Section 2 실데이터 기반 (인당 월평균, 주간+야간 합산)
       const monthly = [
-        {ym:'2025-06',Revit:82.5,Civil3D:41.3,'공통':10.9,Excel:6.8,Navis:1.8,Fuzor:1.4,Infra:1.3,PPT:0.9,AutoCAD:0.6,'P-works':0.4,Hwp:3.0,'기타':3.6},
-        {ym:'2025-07',Revit:69.3,Civil3D:35.4,'공통':4.6,Excel:4.6,Navis:3.9,Fuzor:8.1,Infra:11.6,PPT:1.6,AutoCAD:1.0,'P-works':0.3,Hwp:8.3,'기타':27.2},
-        {ym:'2025-08',Revit:62.5,Civil3D:22.0,'공통':2.4,Excel:7.9,Navis:3.1,Fuzor:9.9,Infra:0.4,PPT:2.3,AutoCAD:0.6,Hwp:5.1,'기타':21.1,'Premiere pro':1.0},
-        {ym:'2025-09',Revit:51.1,Civil3D:18.2,'공통':21.5,Excel:14.0,Navis:7.1,Fuzor:3.9,Infra:2.4,PPT:2.1,AutoCAD:3.4,Hwp:1.5,'기타':29.8,Word:1.9,Twinmotion:0.7},
-        {ym:'2025-10',Revit:35.7,Civil3D:19.4,'공통':18.1,Excel:17.5,Navis:0,Fuzor:2.4,Infra:1.6,PPT:2.6,AutoCAD:6.3,'P-works':0.3,Hwp:1.4,'기타':15.6,Word:1.3,Unreal:0.5,P6:0.3},
-        {ym:'2025-11',Revit:57.5,Civil3D:34.4,'공통':7.2,Excel:24.3,Navis:2.6,Fuzor:7.7,Infra:1.8,PPT:0.9,AutoCAD:0.6,Hwp:1.8,'기타':22.1,Unreal:1.2,P6:0.3},
-        {ym:'2025-12',Revit:37.4,Civil3D:54.5,'공통':4.3,Excel:16.5,Navis:1.1,Fuzor:5.5,Infra:2.8,PPT:0.1,AutoCAD:0.8,Hwp:2.1,'기타':28.3,P6:0.3},
-        {ym:'2026-01',Revit:35.2,Civil3D:30.9,'공통':5.8,Excel:11.6,Navis:5.0,Fuzor:5.1,Infra:3.4,PPT:2.3,AutoCAD:1.1,'P-works':1.7,Hwp:4.9,'기타':22.5,'Premiere pro':0.6,P6:0.6},
-        {ym:'2026-02',Revit:27.0,Civil3D:25.2,'공통':2.0,Excel:25.8,Navis:4.0,Fuzor:16.6,Infra:0.7,PPT:0.4,AutoCAD:0.5,Hwp:2.3,'기타':17.8,P6:0.1},
+        {ym:'2025-06',Revit:93.8,Civil3D:47.5,'공통':10.9,Excel:7.6,'미분류':5.7,'휴가':4.6,'기타':3.6,Hwp:3.0,Navis:1.8,Fuzor:1.6,Infra:1.8,PPT:0.9,AutoCAD:0.6,'P-works':0.4,'Q-works':3.4},
+        {ym:'2025-07',Revit:73.6,Civil3D:38.9,'공통':4.6,Excel:4.7,'미분류':6.4,'휴가':10.7,'기타':28.7,Hwp:9.4,Navis:3.9,Fuzor:8.8,Infra:13.3,PPT:1.6,AutoCAD:1.0,'P-works':0.3,Word:1.8},
+        {ym:'2025-08',Revit:63.3,Civil3D:22.6,'공통':2.4,Excel:8.0,'미분류':8.6,'휴가':9.6,'기타':21.8,Hwp:5.1,Navis:3.1,Fuzor:10.9,Infra:0.4,PPT:2.7,AutoCAD:0.6,'Premiere pro':1.1},
+        {ym:'2025-09',Revit:51.8,Civil3D:19.2,'공통':21.5,Excel:14.3,'미분류':7.8,'휴가':11.1,'기타':30.7,Hwp:1.6,Navis:7.4,Fuzor:4.0,Infra:2.5,PPT:2.1,AutoCAD:3.4,Word:1.9,Twinmotion:0.9},
+        {ym:'2025-10',Revit:36.1,Civil3D:20.5,'공통':18.1,Excel:19.2,'미분류':10.8,'휴가':12.9,'기타':16.1,Hwp:1.6,Navis:0,Fuzor:2.4,Infra:1.7,PPT:3.4,AutoCAD:6.4,'P-works':0.3,Word:1.3,Unreal:0.6,P6:0.3},
+        {ym:'2025-11',Revit:63.0,Civil3D:39.4,'공통':7.2,Excel:27.0,'미분류':5.8,'휴가':9.7,'기타':23.9,Hwp:2.0,Navis:2.9,Fuzor:8.3,Infra:1.9,PPT:0.9,AutoCAD:0.6,Unreal:1.4,P6:0.3},
+        {ym:'2025-12',Revit:40.0,Civil3D:58.8,'공통':4.3,Excel:16.8,'미분류':13.1,'휴가':16.1,'기타':28.4,Hwp:2.1,Navis:1.3,Fuzor:5.6,Infra:3.4,PPT:0.1,AutoCAD:0.8,P6:0.3},
+        {ym:'2026-01',Revit:35.4,Civil3D:31.4,'공통':5.8,Excel:11.6,'미분류':12.3,'휴가':13.1,'기타':22.6,Hwp:5.4,Navis:5.0,Fuzor:5.3,Infra:3.5,PPT:2.3,AutoCAD:1.2,'P-works':1.7,'Premiere pro':0.6,P6:0.6},
+        {ym:'2026-02',Revit:27.4,Civil3D:26.2,'공통':2.0,Excel:26.2,'미분류':8.1,'휴가':6.3,'기타':18.5,Hwp:2.5,Navis:4.3,Fuzor:20.4,Infra:0.7,PPT:0.4,AutoCAD:0.5,P6:0.1},
       ];
       return monthly;
     }
@@ -2386,6 +2388,19 @@
       document.getElementById('scorecardContent').innerHTML=h;
     }
 
+    // ── Timesheet aggregate trigger ──
+    async function runAggregate(){
+      if(!GAS_URL){toast('GAS URL이 설정되어 있지 않습니다','error');return;}
+      toast('타임시트 집계 중...','info');
+      const res=await apiG('aggregateTimesheet');
+      if(res?.success){
+        toast(res.message||'집계 완료','success');
+        await refreshData();
+      }else{
+        toast('집계 실패: '+(res?.error||'알 수 없는 오류'),'error');
+      }
+    }
+
     // ════════════════════════════════════════
     // NEW: 타임시트 분석
     // ════════════════════════════════════════
@@ -2403,8 +2418,8 @@
       // Category calculations
       const cats=[
         {name:'고강도 업무',sw:['Civil3D','P-works','Fuzor'],base:50,color:C[3]},
-        {name:'창조적 업무',sw:['PPT','Infra','Premiere pro'],base:13,color:C[4]},
-        {name:'기본적 업무',sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타'],base:113,color:C[0]},
+        {name:'창조적 업무',sw:['PPT','Infra','Premiere pro','Twinmotion','Unreal'],base:13,color:C[4]},
+        {name:'기본적 업무',sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타','공통','미분류','휴가','Word','Trimble','P6'],base:113,color:C[0]},
       ];
       const catData=cats.map(c=>{const total=c.sw.reduce((s,sw)=>s+(latest[sw]||0),0);return{...c,total,rate:c.base>0?Math.round((total/c.base)*100):0};});
 
