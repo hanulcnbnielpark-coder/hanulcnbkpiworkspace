@@ -1979,7 +1979,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.3.1';
+    const APP_VER = 'v2.3.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2777,7 +2777,7 @@
 
         h+=`<td style="font-weight:700;">${val}%</td>`;
         h+=`<td><span class="rate-badge ${grade==='S'||grade==='A'?'high':grade==='B'?'mid':'danger'}" style="min-width:32px;">${grade}</span></td>`;
-        const confirmedInfo=saved?.confirmedBy?`<div style="font-size:11px;color:var(--text-light);">${saved.confirmedBy}</div>`:'';
+        const confirmedInfo='';
         h+=`<td>${statusBadge}${confirmedInfo}</td>`;
         h+=`<td><button class="pw-btn" style="height:26px;padding:0 8px;font-size:12px;" onclick="showKpiHistory('${ym}','${person}','${kpi.id}','${kpi.name}')"><i class="ri-history-line"></i></button></td>`;
         h+=`</tr>`;
@@ -2856,26 +2856,63 @@
         <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${itemName}</div>
         <div style="font-size:14px;color:var(--text-sub);margin-bottom:16px;">${person} · ${ym}</div>`;
       
-      if(!logs.length){
-        h+=`<div style="padding:20px;text-align:center;color:var(--text-light);">히스토리가 없습니다.</div>`;
-      } else {
-        h+=`<div style="max-height:400px;overflow-y:auto;">`;
+      // Current saved data for this item
+      const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
+
+      // Build timeline from saved data + logs
+      h+=`<div style="max-height:450px;overflow-y:auto;">`;
+
+      if(sc&&sc.inputBy){
+        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(35,131,226,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-edit-line" style="color:var(--blue);font-size:18px;"></i></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;">실적 입력</div>
+            <div style="font-size:14px;color:var(--text);margin-top:4px;"><strong>${sc.inputBy}</strong>이(가) 실적을 입력했습니다.</div>
+            <div style="font-size:13px;color:var(--text-light);margin-top:2px;">${sc.inputAt||''}</div>
+            ${sc.numerator||sc.denominator?`<div style="margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px;">분자: <strong>${sc.numerator}</strong> / 분모: <strong>${sc.denominator}</strong> → 달성률: <strong>${sc.value}%</strong></div>`:`<div style="margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px;">값: <strong>${sc.value}</strong></div>`}
+          </div>
+        </div>`;
+      }
+
+      if(sc&&sc.status==='confirmed'&&sc.confirmedBy){
+        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(52,199,89,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-checkbox-circle-line" style="color:var(--green);font-size:18px;"></i></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;color:var(--green);">승인 완료</div>
+            <div style="font-size:14px;color:var(--text);margin-top:4px;"><strong>${sc.confirmedBy}</strong>이(가) 승인했습니다.</div>
+            <div style="font-size:13px;color:var(--text-light);margin-top:2px;">${sc.confirmedAt||''}</div>
+          </div>
+        </div>`;
+      } else if(sc&&sc.inputBy) {
+        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(255,149,0,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-time-line" style="color:var(--orange);font-size:18px;"></i></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;color:var(--orange);">승인 대기중</div>
+            <div style="font-size:14px;color:var(--text-sub);margin-top:4px;">팀장의 확인을 기다리고 있습니다.</div>
+          </div>
+        </div>`;
+      }
+
+      // Additional log history (older entries)
+      if(logs.length){
+        h+=`<div style="margin-top:12px;padding-top:8px;font-size:13px;font-weight:600;color:var(--text-light);">변경 이력</div>`;
         logs.forEach(l=>{
           const isConfirm=l.action==='CONFIRM_KPI';
-          const icon=isConfirm?'ri-checkbox-circle-line':'ri-edit-line';
-          const color=isConfirm?'var(--green)':'var(--blue)';
-          const label=isConfirm?'확인 (컨펌)':'실적 입력';
-          h+=`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-            <div style="flex-shrink:0;width:32px;height:32px;border-radius:8px;background:${color}15;display:flex;align-items:center;justify-content:center;"><i class="${icon}" style="color:${color};font-size:16px;"></i></div>
+          h+=`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="width:6px;border-radius:3px;background:${isConfirm?'var(--green)':'var(--border)'};flex-shrink:0;"></div>
             <div style="flex:1;">
-              <div style="font-size:14px;font-weight:600;">${label}</div>
-              <div style="font-size:13px;color:var(--text-sub);">${l.user} · ${l.timestamp}</div>
-              ${l.newValue?`<div style="font-size:13px;color:var(--text-light);margin-top:2px;">값: ${l.newValue}</div>`:''}
+              <div style="font-size:13px;"><strong>${l.user}</strong> · ${isConfirm?'승인':'입력'} · <span style="color:var(--text-light);">${l.timestamp}</span></div>
+              ${l.newValue?`<div style="font-size:12px;color:var(--text-light);">${l.oldValue?l.oldValue+' → ':''}${l.newValue}</div>`:''}
             </div>
           </div>`;
         });
-        h+=`</div>`;
       }
+
+      if(!sc&&!logs.length){
+        h+=`<div style="padding:24px;text-align:center;color:var(--text-light);">아직 입력된 이력이 없습니다.</div>`;
+      }
+
+      h+=`</div>`;
       h+=`<div style="margin-top:16px;text-align:right;"><button class="pw-btn" onclick="this.closest('.chart-modal-overlay').remove()">닫기</button></div></div>`;
 
       const overlay=document.createElement('div');
