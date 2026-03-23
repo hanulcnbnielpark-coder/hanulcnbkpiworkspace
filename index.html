@@ -1780,15 +1780,20 @@
           <div class="view-panel" id="view-evaluation">
             <div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">평가 리포트</span>
               <span class="s-unit">상·하반기 인사평가용 KPI 종합 리포트</span></div>
-            <div class="database-controls" style="margin-bottom:14px;gap:8px;flex-wrap:wrap;">
-              <select id="evYear" class="form-select" style="width:100px;" onchange="renderEvaluation()">
+            <div class="database-controls" style="margin-bottom:14px;gap:8px;flex-wrap:wrap;align-items:center;">
+              <select id="evYear" class="form-select" style="width:100px;" onchange="EV_SCHED_CACHE={};renderEvaluation()">
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
               </select>
-              <select id="evPeriod" class="form-select" style="width:160px;" onchange="renderEvaluation()">
+              <select id="evPeriod" class="form-select" style="width:160px;" onchange="EV_SCHED_CACHE={};renderEvaluation()">
                 <option value="H1">상반기 (1~6월)</option>
                 <option value="H2">하반기 (7~12월)</option>
                 <option value="YEAR">연간</option>
+              </select>
+              <select id="evTeamMain" class="form-select" style="width:140px;" onchange="onEvTeamChange()">
+                <option value="">전체 팀</option>
+              </select>
+              <select id="evPersonMain" class="form-select" style="width:160px;" onchange="renderEvaluation()">
               </select>
               <div style="display:flex;gap:4px;margin-left:auto;">
                 <button class="pw-btn" onclick="evTab='summary';renderEvaluation()" id="evTabSum" style="font-size:14px;">종합 등급표</button>
@@ -1908,7 +1913,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v1.3.1';
+    const APP_VER = 'v1.3.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2789,17 +2794,31 @@
       });
     }
 
-    function filterEvPerson() {
-      const team = document.getElementById('evTeamFilter')?.value || '';
-      const sel = document.getElementById('evPerson');
+    function populateEvFilters() {
+      const teamSel = document.getElementById('evTeamMain');
+      if (!teamSel) return;
+      const curTeam = teamSel.value;
+      const teams = [...new Set(MEM.map(m => m.team).filter(t => t))];
+      teamSel.innerHTML = '<option value="">전체 팀</option>';
+      teams.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; teamSel.appendChild(o); });
+      if (teams.includes(curTeam)) teamSel.value = curTeam;
+      onEvTeamChange(true);
+    }
+
+    function onEvTeamChange(noRender) {
+      const team = document.getElementById('evTeamMain')?.value || '';
+      const sel = document.getElementById('evPersonMain');
       if (!sel) return;
       const curVal = sel.value;
-      sel.innerHTML = '';
       const filtered = team ? MEM.filter(m => m.team === team) : MEM;
-      filtered.forEach(m => { const o = document.createElement('option'); o.value = m.name; o.textContent = `${m.name} (${m.position||''})`; sel.appendChild(o); });
+      sel.innerHTML = '';
+      if (evTab === 'summary') { sel.innerHTML = '<option value="">전체 인원</option>'; }
+      filtered.forEach(m => { const o = document.createElement('option'); o.value = m.name; o.textContent = `${m.name} (${m.position || ''})`; sel.appendChild(o); });
       if (filtered.find(m => m.name === curVal)) sel.value = curVal;
-      renderEvaluation();
+      if (!noRender) renderEvaluation();
     }
+
+    function filterEvPerson() { onEvTeamChange(); }
 
     async function renderEvaluation() {
       try {
@@ -2817,6 +2836,7 @@
         const el = document.getElementById(id);
         if(el) el.className = 'pw-btn' + (id === {summary:'evTabSum',detail:'evTabDet',compare:'evTabCmp'}[evTab] ? ' primary' : '');
       });
+      populateEvFilters();
 
       if (evTab === 'summary') renderEvSummary(months, periodLabel, schedData);
       else if (evTab === 'detail') renderEvDetail(months, periodLabel, year, period, schedData);
@@ -2830,18 +2850,9 @@
 
     // ── ① 종합 등급표 ──
     function renderEvSummary(months, periodLabel, schedData) {
-      let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
-        <select id="evSumTeam" class="form-select" style="width:140px;" onchange="renderEvaluation()"><option value="">전체 팀</option></select>
-      </div>`;
-      h += `<div style="margin-bottom:16px;font-size:15px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
+      let h = `<div style="margin-bottom:16px;font-size:15px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
 
-      // Populate team filter
-      setTimeout(()=>{
-        const sel=document.getElementById('evSumTeam');
-        if(sel){const teams=[...new Set(MEM.map(m=>m.team).filter(t=>t))];teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});}
-      },0);
-
-      const evSumTeamFilter = document.getElementById('evSumTeam')?.value || '';
+      const evSumTeamFilter = document.getElementById('evTeamMain')?.value || '';
 
       // 같은 KPI 정의를 공유하는 인원끼리 그룹핑
       const filteredMEM = evSumTeamFilter ? MEM.filter(m => m.team === evSumTeamFilter) : MEM;
@@ -2883,17 +2894,9 @@
     // ── ② 개인 상세 리포트 ──
     function renderEvDetail(months, periodLabel, year, period, schedData) {
       let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
-        <select id="evTeamFilter" class="form-select" style="width:140px;" onchange="filterEvPerson()"><option value="">전체 팀</option></select>
-        <select id="evPerson" class="form-select" style="width:160px;" onchange="renderEvaluation()">`;
-      MEM.forEach(m => { h += `<option value="${m.name}">${m.name} (${m.position||''})</option>`; });
-      // Populate team filter after render
-      setTimeout(()=>{
-        const tf=document.getElementById('evTeamFilter');
-        if(tf&&tf.options.length<=1){const teams=[...new Set(MEM.map(m=>m.team).filter(t=>t))];teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tf.appendChild(o);});}
-      },0);
-      h += `</select><button class="pw-btn primary" onclick="window.print()" style="margin-left:auto;"><i class="ri-printer-line"></i> 인쇄 / PDF</button></div>`;
+        <button class="pw-btn primary" onclick="window.print()" style="margin-left:auto;"><i class="ri-printer-line"></i> 인쇄 / PDF</button></div>`;
 
-      const person = document.getElementById('evPerson')?.value || MEM[0]?.name || '';
+      const person = document.getElementById('evPersonMain')?.value || MEM[0]?.name || '';
       const mem = MEM.find(m => m.name === person);
       const role = mem?.position === '팀장' ? '팀장' : '팀원';
       const items = calcPersonKPI(person, months, role, schedData);
