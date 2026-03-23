@@ -1979,7 +1979,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.3.2';
+    const APP_VER = 'v2.3.3';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2736,7 +2736,7 @@
       const isManager=USER?.role==='admin'||USER?.role==='manager'||(MEM.find(m=>m.name===USER?.name)?.position==='팀장');
 
       let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
-      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th>이력</th></tr></thead><tbody>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th>이력</th></tr></thead><tbody>`;
 
       let allConfirmed=true, hasDraft=false;
       inputItems.forEach(kpi=>{
@@ -2752,7 +2752,7 @@
         const grade=calcGradeFromDef(val,kpi);
         const statusBadge=status==='confirmed'?'<span style="color:var(--green);font-weight:600;font-size:13px;">✓ 확인됨</span>':'<span style="color:var(--orange);font-size:13px;">대기중</span>';
 
-        h+=`<tr><td style="text-align:left;font-weight:600;font-size:14px;">${kpi.name}</td>`;
+        h+=`<tr><td style="font-weight:600;font-size:14px;text-align:center;">${kpi.name}</td>`;
         h+=`<td style="font-size:12px;color:var(--text-sub);max-width:180px;">${kpi.desc||''}</td>`;
 
         if(isCalc){
@@ -2852,66 +2852,44 @@
         return t.includes(person)&&t.includes(itemId)&&t.includes(ym);
       });
       
-      let h=`<div style="padding:28px;min-width:500px;max-width:700px;">
+      let h=`<div style="padding:28px;min-width:600px;max-width:800px;">
         <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${itemName}</div>
         <div style="font-size:14px;color:var(--text-sub);margin-bottom:16px;">${person} · ${ym}</div>`;
       
-      // Current saved data for this item
       const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
 
-      // Build timeline from saved data + logs
-      h+=`<div style="max-height:450px;overflow-y:auto;">`;
-
+      // Current status summary
       if(sc&&sc.inputBy){
-        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
-          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(35,131,226,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-edit-line" style="color:var(--blue);font-size:18px;"></i></div>
-          <div style="flex:1;">
-            <div style="font-size:15px;font-weight:600;">실적 입력</div>
-            <div style="font-size:14px;color:var(--text);margin-top:4px;"><strong>${sc.inputBy}</strong>이(가) 실적을 입력했습니다.</div>
-            <div style="font-size:13px;color:var(--text-light);margin-top:2px;">${sc.inputAt||''}</div>
-            ${sc.numerator||sc.denominator?`<div style="margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px;">분자: <strong>${sc.numerator}</strong> / 분모: <strong>${sc.denominator}</strong> → 달성률: <strong>${sc.value}%</strong></div>`:`<div style="margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px;">값: <strong>${sc.value}</strong></div>`}
+        const valDisp=sc.numerator||sc.denominator?`${sc.numerator}/${sc.denominator} → ${sc.value}%`:sc.value+'%';
+        h+=`<div style="padding:14px;background:var(--bg);border-radius:12px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><span style="font-size:14px;font-weight:600;">현재 실적:</span> <span style="font-size:16px;font-weight:700;color:var(--blue);">${valDisp}</span></div>
+            <div style="font-size:13px;color:var(--text-sub);">입력: ${sc.inputBy} · ${sc.inputAt||''}</div>
           </div>
+          ${sc.status==='confirmed'&&sc.confirmedBy?`<div style="margin-top:8px;padding:8px 12px;background:rgba(52,199,89,0.08);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;font-weight:600;color:var(--green);">✓ 승인 완료</span>
+            <span style="font-size:13px;color:var(--text-sub);">승인자: ${sc.confirmedBy} · ${sc.confirmedAt||''}</span>
+          </div>`:`<div style="margin-top:8px;padding:8px 12px;background:rgba(255,149,0,0.08);border-radius:8px;font-size:14px;font-weight:600;color:var(--orange);">⏳ 승인 대기중</div>`}
         </div>`;
       }
 
-      if(sc&&sc.status==='confirmed'&&sc.confirmedBy){
-        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
-          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(52,199,89,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-checkbox-circle-line" style="color:var(--green);font-size:18px;"></i></div>
-          <div style="flex:1;">
-            <div style="font-size:15px;font-weight:600;color:var(--green);">승인 완료</div>
-            <div style="font-size:14px;color:var(--text);margin-top:4px;"><strong>${sc.confirmedBy}</strong>이(가) 승인했습니다.</div>
-            <div style="font-size:13px;color:var(--text-light);margin-top:2px;">${sc.confirmedAt||''}</div>
-          </div>
-        </div>`;
-      } else if(sc&&sc.inputBy) {
-        h+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
-          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(255,149,0,0.1);display:flex;align-items:center;justify-content:center;"><i class="ri-time-line" style="color:var(--orange);font-size:18px;"></i></div>
-          <div style="flex:1;">
-            <div style="font-size:15px;font-weight:600;color:var(--orange);">승인 대기중</div>
-            <div style="font-size:14px;color:var(--text-sub);margin-top:4px;">팀장의 확인을 기다리고 있습니다.</div>
-          </div>
-        </div>`;
-      }
-
-      // Additional log history (older entries)
+      // Log timeline (compact one-line per entry)
+      h+=`<div style="max-height:400px;overflow-y:auto;">`;
       if(logs.length){
-        h+=`<div style="margin-top:12px;padding-top:8px;font-size:13px;font-weight:600;color:var(--text-light);">변경 이력</div>`;
         logs.forEach(l=>{
           const isConfirm=l.action==='CONFIRM_KPI';
-          h+=`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-            <div style="width:6px;border-radius:3px;background:${isConfirm?'var(--green)':'var(--border)'};flex-shrink:0;"></div>
-            <div style="flex:1;">
-              <div style="font-size:13px;"><strong>${l.user}</strong> · ${isConfirm?'승인':'입력'} · <span style="color:var(--text-light);">${l.timestamp}</span></div>
-              ${l.newValue?`<div style="font-size:12px;color:var(--text-light);">${l.oldValue?l.oldValue+' → ':''}${l.newValue}</div>`:''}
-            </div>
+          const badge=isConfirm?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(52,199,89,0.12);color:var(--green);">승인</span>':'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(35,131,226,0.1);color:var(--blue);">입력</span>';
+          h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+            ${badge}
+            <span style="font-weight:600;">${l.user}</span>
+            <span style="color:var(--text-light);flex:1;">${l.timestamp}</span>
+            ${l.newValue?`<span style="color:var(--text-sub);">${l.oldValue?l.oldValue+' → ':''}${l.newValue}</span>`:''}
           </div>`;
         });
       }
-
       if(!sc&&!logs.length){
         h+=`<div style="padding:24px;text-align:center;color:var(--text-light);">아직 입력된 이력이 없습니다.</div>`;
       }
-
       h+=`</div>`;
       h+=`<div style="margin-top:16px;text-align:right;"><button class="pw-btn" onclick="this.closest('.chart-modal-overlay').remove()">닫기</button></div></div>`;
 
@@ -3105,8 +3083,15 @@
           let swT = 0; (kpi.sw||[]).forEach(sw => { swT += (avgTS[sw]||0); });
           raw = kpi.base > 0 ? Math.round((swT/kpi.base)*100) : 0;
         }
-        else if (kpi.type==='count') { const sc=KPI_SCORES.find(s=>s.person===person&&s.itemId===kpi.id); raw=sc?sc.value:0; }
-        else if (kpi.type==='rate') { const sc=KPI_SCORES.find(s=>s.person===person&&s.itemId===kpi.id); raw=sc?sc.value:0; }
+        else if (kpi.type==='count') {
+          // 해당 기간 월별 평균
+          const scs=KPI_SCORES.filter(s=>s.person===person&&s.itemId===kpi.id&&months.includes(s.yearMonth));
+          raw=scs.length?Math.round(scs.reduce((a,s)=>a+s.value,0)/scs.length):0;
+        }
+        else if (kpi.type==='rate') {
+          const scs=KPI_SCORES.filter(s=>s.person===person&&s.itemId===kpi.id&&months.includes(s.yearMonth));
+          raw=scs.length?Math.round(scs.reduce((a,s)=>a+s.value,0)/scs.length):0;
+        }
 
         let grade = 'D';
         if (kpi.grades[0].hasOwnProperty('min')) { for(const g of kpi.grades){ if(raw>=g.min){grade=g.g;break;} } }
@@ -3258,8 +3243,26 @@
       h += `<td><span class="rate-badge ${fg==='S'||fg==='A'?'high':fg==='B'?'mid':'danger'}">${fg}</span></td><td></td><td style="font-weight:800;">${total.toFixed(2)}</td></tr>`;
       h += '</tbody></table></div>';
 
-      // Radar chart
-      h += `<div style="max-width:400px;margin:20px auto;"><canvas id="chartEvRadar" height="280"></canvas></div>`;
+      // Radar chart — larger
+      h += `<div style="max-width:550px;margin:28px auto;"><canvas id="chartEvRadar" height="380"></canvas></div>`;
+
+      // 항목별 상세 분석표 (인쇄용)
+      h += `<div style="margin-top:28px;page-break-before:auto;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:12px;">항목별 상세 분석</div>
+        <div class="pw-table-wrap"><table class="pw-table" style="text-align:center;font-size:13px;"><thead><tr>
+          <th>KPI 항목</th><th>유형</th><th>가중치</th><th>산식/기준</th><th>실적</th><th>등급기준</th><th>등급</th><th>점수</th>
+        </tr></thead><tbody>`;
+      items.forEach(it => {
+        const gradeCrit = it.grades ? it.grades.map(g => g.min!==undefined ? `${g.g}≥${g.min}` : `${g.g}≤${g.max}`).join(', ') : '';
+        const typeLabel = {auto:'자동',timesheet:'타임시트',rate:'비율',count:'건수'}[it.type]||it.type;
+        h += `<tr><td style="font-weight:600;">${it.name}</td><td>${typeLabel}</td><td>${(it.weight*100).toFixed(0)}%</td>`;
+        h += `<td style="font-size:12px;color:var(--text-sub);max-width:200px;">${it.desc||'-'}</td>`;
+        h += `<td style="font-weight:700;">${it.raw}${it.type==='count'?'건':'%'}</td>`;
+        h += `<td style="font-size:11px;color:var(--text-light);">${gradeCrit}</td>`;
+        h += `<td><span class="rate-badge ${it.grade==='S'||it.grade==='A'?'high':it.grade==='B'?'mid':'danger'}">${it.grade}</span></td>`;
+        h += `<td style="font-weight:700;">${it.weighted.toFixed(2)}</td></tr>`;
+      });
+      h += '</tbody></table></div></div>';
 
       // Monthly trend
       const personTS = getMonthlyTS(person);
@@ -3276,6 +3279,18 @@
         });
         h += '</tbody></table></div></div>';
       }
+
+      h += `<div style="margin-top:28px;padding:16px;border:1px solid var(--border);border-radius:12px;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:8px;">평가 정보</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;color:var(--text-sub);">
+          <div>평가 기간: <strong>${periodLabel}</strong></div>
+          <div>대상 월: <strong>${months.join(', ')}</strong></div>
+          <div>KPI 항목 수: <strong>${items.length}개</strong></div>
+          <div>소속: <strong>${mem?.team||'-'}</strong></div>
+          <div>직급: <strong>${mem?.position||'-'}</strong></div>
+          <div>평가 생성일: <strong>${new Date().toLocaleDateString('ko-KR')}</strong></div>
+        </div>
+      </div>`;
 
       h += `<div style="margin-top:24px;font-size:11px;color:var(--text-light);text-align:center;">본 리포트는 KPI 관리 시스템에서 자동 생성되었습니다. · (주)한울씨앤비</div>`;
       h += '</div>'; // end evalPrintArea
