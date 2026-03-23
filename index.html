@@ -1509,13 +1509,16 @@
     }
 
     @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
       body * { visibility: hidden; }
-      #evalPrintArea, #evalPrintArea * { visibility: visible; }
+      #evalPrintArea, #evalPrintArea * { visibility: visible !important; }
       #evalPrintArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+      #evalPrintArea canvas { visibility: visible !important; max-width: 100% !important; }
       .no-print { display: none !important; }
       .pw-table { font-size: 11px !important; }
-      .pw-table thead th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+      .pw-table thead th { background: #f0f0f0 !important; }
       .rate-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pw-progress-track, .pw-progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -1979,7 +1982,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.3.4';
+    const APP_VER = 'v2.3.5';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
