@@ -268,7 +268,8 @@
     .sidebar.collapsed .sidebar-label,
     .sidebar.collapsed .nav-item .label,
     .sidebar.collapsed .sidebar-footer .copyright,
-    .sidebar.collapsed .sidebar-footer .user-row span:last-child {
+    .sidebar.collapsed .sidebar-footer .user-row span:last-child,
+    .sidebar.collapsed .collapse-btn {
       opacity: 0;
       pointer-events: none;
       width: 0;
@@ -277,18 +278,49 @@
 
     .sidebar.collapsed .workspace-head {
       justify-content: center;
-      padding-inline: 8px;
+      padding: 16px 0 10px;
+    }
+
+    .sidebar.collapsed .workspace-logo {
+      width: 40px;
+      height: 40px;
     }
 
     .sidebar.collapsed .sidebar-group,
     .sidebar.collapsed .sidebar-footer {
-      padding-left: 8px;
-      padding-right: 8px;
+      padding-left: 0;
+      padding-right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .sidebar.collapsed .nav-item {
       justify-content: center;
       padding-inline: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      margin: 2px 0;
+    }
+
+    .sidebar.collapsed .nav-item .icon {
+      font-size: 20px;
+    }
+
+    .sidebar.collapsed .sidebar-footer .user-row {
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .sidebar.collapsed .sidebar-footer button {
+      width: 44px;
+      padding: 0;
+      justify-content: center;
+      font-size: 0;
+    }
+    .sidebar.collapsed .sidebar-footer button i {
+      font-size: 18px;
     }
 
     /* Main */
@@ -1921,7 +1953,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.0.5';
+    const APP_VER = 'v2.0.6';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
