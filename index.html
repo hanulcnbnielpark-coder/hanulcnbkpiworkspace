@@ -1908,7 +1908,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v1.2.3';
+    const APP_VER = 'v1.3.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -1992,7 +1992,8 @@
     }
 
     // ─── KPI Definitions from Sheet 1 ───
-    const KPI_DEF = {
+    // ─── KPI 항목 정의 (기본값 — 시트 미설정 시 폴백) ───
+    const KPI_DEF_DEFAULT = {
       '팀장': [
         {id:'schedule',  name:'팀 일정 준수율',     weight:0.30, type:'auto', grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
         {id:'manage',    name:'팀원 관리율',        weight:0.30, type:'auto', desc:'평균-최저 편차율', grades:[{g:'S',max:5},{g:'A',max:10},{g:'B',max:15},{g:'C',max:20},{g:'D',max:999}]},
@@ -2014,6 +2015,46 @@
         {id:'manage_team', name:'총괄팀원 관리율',       weight:0.20, type:'auto', desc:'총괄팀 편차율', grades:[{g:'S',max:5},{g:'A',max:10},{g:'B',max:15},{g:'C',max:20},{g:'D',max:999}]},
       ]
     };
+    let KPI_DEF_DYNAMIC = {}; // GAS에서 로드된 팀×직급별 KPI 정의
+
+    // 인원 기반 KPI 정의 조회 (팀×직급 → 팀×역할유형 → 기본값)
+    function getKpiDefFor(person) {
+      const m = MEM.find(x => x.name === person);
+      const team = m?.team || '';
+      const pos = m?.position || '';
+      const roleType = (pos === '팀장' || pos === '총괄팀장') ? pos : '팀원';
+
+      // 1순위: 팀+직급 정확 매치 (BIM1팀_선임)
+      if (KPI_DEF_DYNAMIC[team + '_' + pos]?.length) return KPI_DEF_DYNAMIC[team + '_' + pos];
+      // 2순위: 팀+역할유형 (BIM1팀_팀원)
+      if (KPI_DEF_DYNAMIC[team + '_' + roleType]?.length) return KPI_DEF_DYNAMIC[team + '_' + roleType];
+      // 3순위: 전체+직급 (전체_선임)
+      if (KPI_DEF_DYNAMIC['전체_' + pos]?.length) return KPI_DEF_DYNAMIC['전체_' + pos];
+      // 4순위: 전체+역할유형 (전체_팀원)
+      if (KPI_DEF_DYNAMIC['전체_' + roleType]?.length) return KPI_DEF_DYNAMIC['전체_' + roleType];
+      // 폴백: 하드코딩 기본값
+      return KPI_DEF_DEFAULT[roleType] || KPI_DEF_DEFAULT['팀원'];
+    }
+
+    // KPI_DEF 호환 래퍼 (기존 코드 호환용)
+    const KPI_DEF = new Proxy({}, {
+      get(target, prop) {
+        // prop이 '팀장','팀원','총괄팀장' 등일 때
+        if (KPI_DEF_DEFAULT[prop]) return KPI_DEF_DEFAULT[prop];
+        return undefined;
+      }
+    });
+
+    async function loadKpiDefs() {
+      if (!GAS_URL) return;
+      try {
+        const res = await apiG('getKpiDefs');
+        if (res?.defs) {
+          KPI_DEF_DYNAMIC = res.defs;
+          console.log('KPI 항목설정 로드:', Object.keys(KPI_DEF_DYNAMIC).length, '개 그룹');
+        }
+      } catch(e) { console.warn('KPI 항목설정 로드 실패:', e); }
+    }
 
     const GRADE_SCORE = {S:5,A:4,B:3,C:2,D:1};
     const GRADE_COLOR = {S:'var(--green)',A:'var(--blue)',B:'var(--orange)',C:'var(--red)',D:'var(--red)'};
@@ -2235,6 +2276,8 @@
       // Timesheet: try live fetch, fallback to demo
       const liveTS = await fetchTimesheetFromSheet();
       TIMESHEET = (liveTS && liveTS.length > 0) ? liveTS : genTimesheetDemo();
+      // KPI 항목설정 로드 (팀×직급별)
+      await loadKpiDefs();
       popDD();renderV();toast('데이터를 불러왔습니다','success');
     }
 
@@ -2474,7 +2517,7 @@
       const role=document.getElementById('scRole').value;
       const person=sel.value||filtered[0]?.name||'';
       if(!person){document.getElementById('scorecardContent').innerHTML='<div class="empty-pw"><p>인원 데이터가 없습니다.</p></div>';return;}
-      const defs=KPI_DEF[role];if(!defs){document.getElementById('scorecardContent').innerHTML='<div class="empty-pw"><p>해당 역할의 KPI 정의가 없습니다.</p></div>';return;}
+      const defs=getKpiDefFor(person);if(!defs||!defs.length){document.getElementById('scorecardContent').innerHTML='<div class="empty-pw"><p>해당 역할의 KPI 정의가 없습니다.</p></div>';return;}
 
       // Calculate each KPI
       const items=defs.map(kpi=>{
@@ -2701,7 +2744,7 @@
     }
 
     function calcPersonKPI(person, months, role, schedData) {
-      const defs = KPI_DEF[role] || KPI_DEF['팀원'];
+      const defs = getKpiDefFor(person);
       // 일정준수율: 해당 기간 전체 평균
       const pData = (schedData || DATA).filter(r => r.person === person);
       const schedRate = pData.length ? Math.round(pData.reduce((s,r) => s + (r.achievementRate||0), 0) / pData.length) : 0;
@@ -2769,12 +2812,22 @@
     function renderEvSummary(months, periodLabel, schedData) {
       let h = `<div style="margin-bottom:16px;font-size:15px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
 
-      ['팀장','팀원'].forEach(role => {
-        const members = role==='팀장' ? MEM.filter(m=>m.position==='팀장') : MEM.filter(m=>m.position!=='팀장');
-        if (!members.length) return;
-        const defs = KPI_DEF[role] || KPI_DEF['팀원'];
+      // 같은 KPI 정의를 공유하는 인원끼리 그룹핑
+      const groups = {};
+      MEM.forEach(m => {
+        const defs = getKpiDefFor(m.name);
+        const key = defs.map(d => d.id).join(',');
+        const role = (m.position === '팀장' || m.position === '총괄팀장') ? m.position : '팀원';
+        const label = (m.team || '') + ' ' + role;
+        if (!groups[key]) groups[key] = { label, defs, members: [], role };
+        groups[key].members.push(m);
+      });
 
-        h += `<div style="margin-bottom:24px;"><div style="font-size:16px;font-weight:700;margin-bottom:10px;">${role} KPI (${members.length}명)</div>`;
+      Object.values(groups).forEach(grp => {
+        const { label, defs, members, role } = grp;
+        if (!members.length) return;
+
+        h += `<div style="margin-bottom:24px;"><div style="font-size:16px;font-weight:700;margin-bottom:10px;">${label} KPI (${members.length}명)</div>`;
         h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th style="text-align:left;">이름</th><th>팀</th>`;
         defs.forEach(d => { h += `<th style="font-size:12px;">${d.name.replace(' 수행률','').replace(' 준수율','')}<br><span style="font-weight:400;font-size:11px;">${(d.weight*100).toFixed(0)}%</span></th>`; });
         h += `<th style="background:var(--blue-soft);color:var(--blue-deep);">종합점수</th><th style="background:var(--blue-soft);color:var(--blue-deep);">최종등급</th></tr></thead><tbody>`;
