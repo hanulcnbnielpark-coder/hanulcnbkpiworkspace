@@ -1979,7 +1979,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.3.0';
+    const APP_VER = 'v2.3.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2367,6 +2367,8 @@
       await loadKpiDefs();
       // KPI 실적 로드
       if(GAS_URL){try{const sc=await apiG('getKpiScores');KPI_SCORES=sc?.scores||[];}catch(e){console.warn('KPI 실적 로드 실패:',e);}}
+      // Pre-cache logs
+      if(GAS_URL){try{const lr=await apiG('getLogs',{limit:'500'});_logCache=lr?.logs||[];_logCacheTime=Date.now();}catch(e){}}
       popDD();renderV();toast('데이터를 불러왔습니다','success');
     }
 
@@ -2734,7 +2736,7 @@
       const isManager=USER?.role==='admin'||USER?.role==='manager'||(MEM.find(m=>m.name===USER?.name)?.position==='팀장');
 
       let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
-      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th></th></tr></thead><tbody>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th>이력</th></tr></thead><tbody>`;
 
       let allConfirmed=true, hasDraft=false;
       inputItems.forEach(kpi=>{
@@ -2835,18 +2837,22 @@
       return 'D';
     }
 
+    let _logCache=null;
+    let _logCacheTime=0;
+
     async function showKpiHistory(ym,person,itemId,itemName){
-      // Fetch logs from server
-      let logs=[];
-      if(GAS_URL){
-        const res=await apiG('getLogs',{limit:'200'});
-        logs=(res?.logs||[]).filter(l=>{
-          const t=String(l.target||'');
-          return t.includes(person)&&t.includes(itemId);
-        });
+      // Use cached logs (refresh every 30s)
+      const now=Date.now();
+      if(!_logCache||now-_logCacheTime>30000){
+        if(GAS_URL){const res=await apiG('getLogs',{limit:'500'});_logCache=res?.logs||[];_logCacheTime=now;}
+        else _logCache=[];
       }
+      const logs=_logCache.filter(l=>{
+        const t=String(l.target||'');
+        return t.includes(person)&&t.includes(itemId)&&t.includes(ym);
+      });
       
-      let h=`<div style="padding:24px;max-width:600px;">
+      let h=`<div style="padding:28px;min-width:500px;max-width:700px;">
         <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${itemName}</div>
         <div style="font-size:14px;color:var(--text-sub);margin-bottom:16px;">${person} · ${ym}</div>`;
       
