@@ -1979,7 +1979,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.2.2';
+    const APP_VER = 'v2.3.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2676,21 +2676,11 @@
 
       const ym=`${Y}-${String(M).padStart(2,'0')}`;
       h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>가중치</th><th>산식/기준</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
-      items.forEach((i,idx)=>{
-        const isEditable=(i.type==='rate'||i.type==='count');
-        const isCalc=i.desc&&i.desc.includes('÷');
+      items.forEach(i=>{
         const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===i.id);
-        const status=sc?.status||'';
-        const statusIcon=status==='confirmed'?' <span style="color:var(--green);font-size:11px;">✓</span>':'';
-
-        let editCell;
-        if(isEditable){
-          editCell=`<td id="sc_cell_${idx}" style="font-weight:600;cursor:pointer;position:relative;" onclick="scOpenEdit(${idx},'${ym}','${person}','${i.id}','${i.type}',${isCalc},${sc?.numerator||0},${sc?.denominator||0},${i.raw})" title="클릭하여 수정">${i.display}${statusIcon} <i class="ri-edit-line" style="font-size:11px;color:var(--text-light);margin-left:2px;"></i></td>`;
-        } else {
-          editCell=`<td style="font-weight:600;">${i.display}</td>`;
-        }
-
-        h+=`<tr><td style="font-weight:700;text-align:center;">${i.name}</td><td>${(i.weight*100).toFixed(0)}%</td><td style="font-size:13px;color:var(--text-sub);max-width:220px;text-align:center;">${i.desc||i.name}</td>${editCell}<td><span class="rate-badge ${i.grade==='S'||i.grade==='A'?'high':i.grade==='B'?'mid':i.grade==='C'?'low':'danger'}" style="min-width:36px;">${i.grade}</span></td><td>${i.score}</td><td style="font-weight:700;">${(i.score*i.weight).toFixed(2)}</td></tr>`;
+        const st=sc?.status||'';
+        const stIcon=st==='confirmed'?' <span style="color:var(--green);font-size:11px;" title="팀장 확인 완료">✓</span>':'';
+        h+=`<tr><td style="font-weight:700;text-align:center;">${i.name}</td><td>${(i.weight*100).toFixed(0)}%</td><td style="font-size:13px;color:var(--text-sub);max-width:220px;text-align:center;">${i.desc||i.name}</td><td style="font-weight:600;">${i.display}${stIcon}</td><td><span class="rate-badge ${i.grade==='S'||i.grade==='A'?'high':i.grade==='B'?'mid':i.grade==='C'?'low':'danger'}" style="min-width:36px;">${i.grade}</span></td><td>${i.score}</td><td style="font-weight:700;">${(i.score*i.weight).toFixed(2)}</td></tr>`;
       });
       h+=`<tr class="total-row"><td style="font-weight:800;text-align:center;">합계</td><td>100%</td><td></td><td></td><td><span class="rate-badge ${finalGrade==='S'||finalGrade==='A'?'high':finalGrade==='B'?'mid':'danger'}">${finalGrade}</span></td><td></td><td style="font-weight:800;">${totalWeightedScore.toFixed(2)}</td></tr>`;
       h+='</tbody></table></div>';
@@ -2744,7 +2734,7 @@
       const isManager=USER?.role==='admin'||USER?.role==='manager'||(MEM.find(m=>m.name===USER?.name)?.position==='팀장');
 
       let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
-      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th></tr></thead><tbody>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th></th></tr></thead><tbody>`;
 
       let allConfirmed=true, hasDraft=false;
       inputItems.forEach(kpi=>{
@@ -2785,7 +2775,10 @@
 
         h+=`<td style="font-weight:700;">${val}%</td>`;
         h+=`<td><span class="rate-badge ${grade==='S'||grade==='A'?'high':grade==='B'?'mid':'danger'}" style="min-width:32px;">${grade}</span></td>`;
-        h+=`<td>${statusBadge}</td></tr>`;
+        const confirmedInfo=saved?.confirmedBy?`<div style="font-size:11px;color:var(--text-light);">${saved.confirmedBy}</div>`:'';
+        h+=`<td>${statusBadge}${confirmedInfo}</td>`;
+        h+=`<td><button class="pw-btn" style="height:26px;padding:0 8px;font-size:12px;" onclick="showKpiHistory('${ym}','${person}','${kpi.id}','${kpi.name}')"><i class="ri-history-line"></i></button></td>`;
+        h+=`</tr>`;
       });
       h+='</tbody></table></div>';
 
@@ -2842,44 +2835,55 @@
       return 'D';
     }
 
-    // Scorecard click-to-edit
-    function scOpenEdit(idx,ym,person,itemId,type,isCalc,num,den,val){
-      const cell=document.getElementById('sc_cell_'+idx);
-      if(!cell||cell.dataset.editing==='true')return;
-      cell.dataset.editing='true';
-
-      if(isCalc){
-        cell.innerHTML=`<div style="display:flex;align-items:center;gap:3px;justify-content:center;">
-          <input type="number" class="form-input" style="width:50px;height:28px;text-align:center;font-size:13px;" value="${num}" min="0" step="1" id="sc_n_${idx}">
-          <span style="color:var(--text-light);font-size:12px;">/</span>
-          <input type="number" class="form-input" style="width:50px;height:28px;text-align:center;font-size:13px;" value="${den}" min="0" step="1" id="sc_d_${idx}">
-          <button class="pw-btn primary" style="height:28px;padding:0 10px;font-size:12px;" onclick="scCalcConfirm(${idx},'${ym}','${person}','${itemId}')">확인</button>
-        </div>`;
-        document.getElementById('sc_n_'+idx)?.focus();
-      } else {
-        const unit=type==='count'?'건':'%';
-        cell.innerHTML=`<div style="display:flex;align-items:center;gap:3px;justify-content:center;">
-          <input type="number" class="form-input" style="width:70px;height:28px;text-align:center;font-size:14px;font-weight:600;" value="${val}" min="0" step="1" id="sc_v_${idx}" onkeydown="if(event.key==='Enter')scValConfirm(${idx},'${ym}','${person}','${itemId}')">
-          <span style="font-size:12px;color:var(--text-light);">${unit}</span>
-          <button class="pw-btn primary" style="height:28px;padding:0 10px;font-size:12px;" onclick="scValConfirm(${idx},'${ym}','${person}','${itemId}')">확인</button>
-        </div>`;
-        document.getElementById('sc_v_'+idx)?.focus();
+    async function showKpiHistory(ym,person,itemId,itemName){
+      // Fetch logs from server
+      let logs=[];
+      if(GAS_URL){
+        const res=await apiG('getLogs',{limit:'200'});
+        logs=(res?.logs||[]).filter(l=>{
+          const t=String(l.target||'');
+          return t.includes(person)&&t.includes(itemId);
+        });
       }
+      
+      let h=`<div style="padding:24px;max-width:600px;">
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${itemName}</div>
+        <div style="font-size:14px;color:var(--text-sub);margin-bottom:16px;">${person} · ${ym}</div>`;
+      
+      if(!logs.length){
+        h+=`<div style="padding:20px;text-align:center;color:var(--text-light);">히스토리가 없습니다.</div>`;
+      } else {
+        h+=`<div style="max-height:400px;overflow-y:auto;">`;
+        logs.forEach(l=>{
+          const isConfirm=l.action==='CONFIRM_KPI';
+          const icon=isConfirm?'ri-checkbox-circle-line':'ri-edit-line';
+          const color=isConfirm?'var(--green)':'var(--blue)';
+          const label=isConfirm?'확인 (컨펌)':'실적 입력';
+          h+=`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="flex-shrink:0;width:32px;height:32px;border-radius:8px;background:${color}15;display:flex;align-items:center;justify-content:center;"><i class="${icon}" style="color:${color};font-size:16px;"></i></div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">${label}</div>
+              <div style="font-size:13px;color:var(--text-sub);">${l.user} · ${l.timestamp}</div>
+              ${l.newValue?`<div style="font-size:13px;color:var(--text-light);margin-top:2px;">값: ${l.newValue}</div>`:''}
+            </div>
+          </div>`;
+        });
+        h+=`</div>`;
+      }
+      h+=`<div style="margin-top:16px;text-align:right;"><button class="pw-btn" onclick="this.closest('.chart-modal-overlay').remove()">닫기</button></div></div>`;
+
+      const overlay=document.createElement('div');
+      overlay.className='chart-modal-overlay';
+      overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+      const modal=document.createElement('div');
+      modal.style.cssText='background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow:auto;';
+      modal.innerHTML=h;
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
     }
 
-    async function scCalcConfirm(idx,ym,person,itemId){
-      const n=parseFloat(document.getElementById('sc_n_'+idx)?.value)||0;
-      const d=parseFloat(document.getElementById('sc_d_'+idx)?.value)||0;
-      const val=d>0?Math.round((n/d)*100):0;
-      await saveKpiScoreVal(ym,person,itemId,n,d,val);
-      renderScorecard();
-    }
 
-    async function scValConfirm(idx,ym,person,itemId){
-      const v=parseFloat(document.getElementById('sc_v_'+idx)?.value)||0;
-      await saveKpiScoreVal(ym,person,itemId,0,0,v);
-      renderScorecard();
-    }
 
     // ════════════════════════════════════════
     // NEW: 타임시트 분석
