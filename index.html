@@ -2635,12 +2635,16 @@
         else if(kpi.type==='count'){
           const ym=`${Y}-${String(M).padStart(2,'0')}`;
           const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===kpi.id);
-          val=sc?sc.value:0;display=val+'건';raw=val;
+          val=sc?sc.value:0;
+          const st=sc?.status||'';
+          display=val+'건'+(st==='confirmed'?' ✓':'');raw=val;
         }
         else if(kpi.type==='rate'){
           const ym=`${Y}-${String(M).padStart(2,'0')}`;
           const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===kpi.id);
-          val=sc?sc.value:0;display=val+'%';raw=val;
+          val=sc?sc.value:0;
+          const st=sc?.status||'';
+          display=val+'%'+(st==='confirmed'?' ✓':'');raw=val;
         }
         } catch(e) { console.warn('KPI calc error:', kpi.id, e); }
 
@@ -2708,11 +2712,9 @@
       // Year-month dropdown
       const ymSel=document.getElementById('ksYearMonth');
       if(ymSel.options.length===0){for(let i=-2;i<=0;i++){const d=new Date(Y,M-1+i,1);const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;const o=document.createElement('option');o.value=v;o.textContent=v;ymSel.appendChild(o);}ymSel.value=`${Y}-${String(M).padStart(2,'0')}`;}
-      // Team dropdown
       populateTeamFilters();
       const teamSel=document.getElementById('ksTeam');
       if(teamSel.options.length<=1){const teams=[...new Set(MEM.map(m=>m.team).filter(t=>t))];teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;teamSel.appendChild(o);});}
-      // Person dropdown
       const pSel=document.getElementById('ksPerson');
       if(pSel.options.length===0)filterKsPerson();
 
@@ -2722,31 +2724,99 @@
 
       const defs=getKpiDefFor(person);
       const inputItems=defs.filter(d=>d.type==='rate'||d.type==='count');
-      if(!inputItems.length){document.getElementById('kpiScoreContent').innerHTML='<div class="empty-pw"><p>수동 입력 항목이 없습니다. (auto/timesheet 타입만 존재)</p></div>';return;}
+      if(!inputItems.length){document.getElementById('kpiScoreContent').innerHTML='<div class="empty-pw"><p>수동 입력 항목이 없습니다.</p></div>';return;}
 
       const mem=MEM.find(m=>m.name===person);
-      let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
-      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>유형</th><th>산식/기준</th><th style="width:120px;">실적 입력</th><th>현재 등급</th></tr></thead><tbody>`;
+      const isManager=USER?.role==='admin'||USER?.role==='manager'||(MEM.find(m=>m.name===USER?.name)?.position==='팀장');
 
+      let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th style="text-align:left;">KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th></tr></thead><tbody>`;
+
+      let allConfirmed=true, hasDraft=false;
       inputItems.forEach(kpi=>{
         const saved=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===kpi.id);
-        const val=saved?saved.value:0;
+        const isCalc=kpi.desc&&kpi.desc.includes('÷');
+        const num=saved?.numerator||0;
+        const den=saved?.denominator||0;
+        const val=saved?.value||0;
+        const status=saved?.status||'draft';
+        if(status!=='confirmed')allConfirmed=false;
+        if(saved&&status==='draft')hasDraft=true;
+
         const grade=calcGradeFromDef(val,kpi);
-        const unit=kpi.type==='count'?'건':'%';
-        h+=`<tr>
-          <td style="text-align:left;font-weight:600;">${kpi.name}</td>
-          <td style="font-size:13px;color:var(--text-sub);">${kpi.type==='rate'?'비율':'건수'}</td>
-          <td style="font-size:13px;color:var(--text-sub);max-width:200px;">${kpi.desc||''}</td>
-          <td><div style="display:flex;align-items:center;gap:4px;justify-content:center;">
-            <input type="number" class="form-input" style="width:80px;height:34px;text-align:center;font-size:15px;font-weight:600;" value="${val}" min="0" step="${kpi.type==='count'?'1':'1'}" onchange="saveKpiScoreVal('${ym}','${person}','${kpi.id}',this.value)" onkeydown="if(event.key==='Enter'){this.blur();}">
-            <span style="font-size:13px;color:var(--text-light);">${unit}</span>
-          </div></td>
-          <td><span class="rate-badge ${grade==='S'||grade==='A'?'high':grade==='B'?'mid':'danger'}" style="min-width:32px;">${grade}</span></td>
-        </tr>`;
+        const statusBadge=status==='confirmed'?'<span style="color:var(--green);font-weight:600;font-size:13px;">✓ 확인됨</span>':'<span style="color:var(--orange);font-size:13px;">대기중</span>';
+
+        h+=`<tr><td style="text-align:left;font-weight:600;font-size:14px;">${kpi.name}</td>`;
+        h+=`<td style="font-size:12px;color:var(--text-sub);max-width:180px;">${kpi.desc||''}</td>`;
+
+        if(isCalc){
+          // 분자/분모 입력 → 자동 %
+          h+=`<td><div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+            <input type="number" class="form-input" style="width:60px;height:32px;text-align:center;font-size:14px;" value="${num}" min="0" step="1" id="ks_n_${kpi.id}" onchange="calcAndSaveKpi('${ym}','${person}','${kpi.id}')"> 
+            <span style="color:var(--text-light);font-size:13px;">/</span>
+            <input type="number" class="form-input" style="width:60px;height:32px;text-align:center;font-size:14px;" value="${den}" min="0" step="1" id="ks_d_${kpi.id}" onchange="calcAndSaveKpi('${ym}','${person}','${kpi.id}')">
+            <span style="font-size:12px;color:var(--text-light);">건</span>
+          </div></td>`;
+        } else if(kpi.type==='count'){
+          h+=`<td><div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+            <input type="number" class="form-input" style="width:80px;height:32px;text-align:center;font-size:14px;font-weight:600;" value="${val}" min="0" step="1" onchange="saveKpiScoreVal('${ym}','${person}','${kpi.id}',0,0,this.value)">
+            <span style="font-size:13px;color:var(--text-light);">건</span>
+          </div></td>`;
+        } else {
+          h+=`<td><div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+            <input type="number" class="form-input" style="width:80px;height:32px;text-align:center;font-size:14px;font-weight:600;" value="${val}" min="0" step="1" onchange="saveKpiScoreVal('${ym}','${person}','${kpi.id}',0,0,this.value)">
+            <span style="font-size:13px;color:var(--text-light);">%</span>
+          </div></td>`;
+        }
+
+        h+=`<td style="font-weight:700;">${val}%</td>`;
+        h+=`<td><span class="rate-badge ${grade==='S'||grade==='A'?'high':grade==='B'?'mid':'danger'}" style="min-width:32px;">${grade}</span></td>`;
+        h+=`<td>${statusBadge}</td></tr>`;
       });
       h+='</tbody></table></div>';
-      h+=`<div style="margin-top:12px;font-size:13px;color:var(--text-light);">입력값은 자동 저장되며 KPI 스코어카드에 즉시 반영됩니다.</div>`;
+
+      // 팀장 컨펌 버튼
+      if(isManager&&hasDraft){
+        h+=`<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+          <button class="pw-btn primary" onclick="confirmAllKpi('${ym}','${person}')"><i class="ri-check-double-line"></i> 전체 확인 (컨펌)</button>
+        </div>`;
+      }
+      if(allConfirmed&&inputItems.length>0){
+        h+=`<div style="margin-top:12px;padding:10px 14px;background:var(--green-soft);border-radius:10px;font-size:14px;color:var(--green-deep);"><i class="ri-checkbox-circle-line"></i> 모든 항목이 팀장에 의해 확인 완료되었습니다.</div>`;
+      }
+
+      h+=`<div style="margin-top:12px;font-size:13px;color:var(--text-light);">입력값은 자동 저장되며, 팀장 확인 후 KPI 스코어카드에 최종 반영됩니다.</div>`;
       document.getElementById('kpiScoreContent').innerHTML=h;
+    }
+
+    function calcAndSaveKpi(ym,person,itemId){
+      const n=parseFloat(document.getElementById('ks_n_'+itemId)?.value)||0;
+      const d=parseFloat(document.getElementById('ks_d_'+itemId)?.value)||0;
+      const val=d>0?Math.round((n/d)*100):0;
+      saveKpiScoreVal(ym,person,itemId,n,d,val);
+    }
+
+    async function saveKpiScoreVal(ym,person,itemId,numerator,denominator,value){
+      const v=parseFloat(value)||0;
+      const n=parseFloat(numerator)||0;
+      const d=parseFloat(denominator)||0;
+      const idx=KPI_SCORES.findIndex(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
+      if(idx>=0){KPI_SCORES[idx].value=v;KPI_SCORES[idx].numerator=n;KPI_SCORES[idx].denominator=d;KPI_SCORES[idx].status='draft';}
+      else KPI_SCORES.push({yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v,status:'draft',inputBy:USER?.name||'',confirmedBy:''});
+      if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v});
+      renderKpiScoreInput();
+      toast('저장됨','success');
+    }
+
+    async function confirmAllKpi(ym,person){
+      if(GAS_URL){
+        const res=await apiP({action:'confirmKpiScore',yearMonth:ym,person,itemId:'all'});
+        if(res?.success){
+          KPI_SCORES.filter(s=>s.yearMonth===ym&&s.person===person).forEach(s=>s.status='confirmed');
+          renderKpiScoreInput();
+          toast(`${person} ${ym} 실적 확인 완료`,'success');
+        } else { toast(res?.error||'확인 실패','error'); }
+      }
     }
 
     function calcGradeFromDef(val,kpi){
@@ -2756,19 +2826,6 @@
         if(g.max!==undefined&&val<=g.max)return g.g;
       }
       return 'D';
-    }
-
-    async function saveKpiScoreVal(ym,person,itemId,value){
-      const v=parseFloat(value)||0;
-      // Update local cache
-      const idx=KPI_SCORES.findIndex(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
-      if(idx>=0)KPI_SCORES[idx].value=v;
-      else KPI_SCORES.push({yearMonth:ym,person,itemId,value:v});
-      // Save to server
-      if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,value:v});
-      // Re-render to update grade
-      renderKpiScoreInput();
-      toast('저장됨','success');
     }
 
     // ════════════════════════════════════════
