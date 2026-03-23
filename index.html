@@ -1908,7 +1908,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v1.3.0';
+    const APP_VER = 'v1.3.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2580,11 +2580,11 @@
         </div>
       </div>`;
 
-      h+=`<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th style="text-align:left;">KPI 항목</th><th>가중치</th><th>산식/기준</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>가중치</th><th>산식/기준</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
       items.forEach(i=>{
-        h+=`<tr><td class="text-left" style="font-weight:700;">${i.name}</td><td>${(i.weight*100).toFixed(0)}%</td><td class="text-left" style="font-size:14px;color:var(--text-sub);max-width:180px;">${i.desc||i.name}</td><td style="font-weight:600;">${i.display}</td><td><span class="rate-badge ${i.grade==='S'||i.grade==='A'?'high':i.grade==='B'?'mid':i.grade==='C'?'low':'danger'}" style="min-width:36px;">${i.grade}</span></td><td>${i.score}</td><td style="font-weight:700;">${(i.score*i.weight).toFixed(2)}</td></tr>`;
+        h+=`<tr><td style="font-weight:700;text-align:center;">${i.name}</td><td>${(i.weight*100).toFixed(0)}%</td><td style="font-size:13px;color:var(--text-sub);max-width:220px;text-align:center;">${i.desc||i.name}</td><td style="font-weight:600;">${i.display}</td><td><span class="rate-badge ${i.grade==='S'||i.grade==='A'?'high':i.grade==='B'?'mid':i.grade==='C'?'low':'danger'}" style="min-width:36px;">${i.grade}</span></td><td>${i.score}</td><td style="font-weight:700;">${(i.score*i.weight).toFixed(2)}</td></tr>`;
       });
-      h+=`<tr class="total-row"><td class="text-left" style="font-weight:800;">합계</td><td>100%</td><td></td><td></td><td><span class="rate-badge ${finalGrade==='S'||finalGrade==='A'?'high':finalGrade==='B'?'mid':'danger'}">${finalGrade}</span></td><td></td><td style="font-weight:800;">${totalWeightedScore.toFixed(2)}</td></tr>`;
+      h+=`<tr class="total-row"><td style="font-weight:800;text-align:center;">합계</td><td>100%</td><td></td><td></td><td><span class="rate-badge ${finalGrade==='S'||finalGrade==='A'?'high':finalGrade==='B'?'mid':'danger'}">${finalGrade}</span></td><td></td><td style="font-weight:800;">${totalWeightedScore.toFixed(2)}</td></tr>`;
       h+='</tbody></table></div>';
       document.getElementById('scorecardContent').innerHTML=h;
     }
@@ -2618,15 +2618,23 @@
       if(!ts.length){document.getElementById('timesheetContent').innerHTML='<div class="empty-pw"><i class="ri-pie-chart-line"></i><p>타임시트 데이터가 없습니다</p></div>';return;}
       const latest=ts[ts.length-1];
 
-      // Category calculations
-      const cats=[
+      // Category calculations — dynamic from KPI defs
+      const refPerson = personF || (filtered[0]?.name) || (MEM[0]?.name) || '';
+      const tsDefs = getKpiDefFor(refPerson).filter(d => d.type === 'timesheet');
+      const defaultCats = [
         {name:'고강도 업무',sw:['Civil3D','P-works','Fuzor'],base:50,color:C[3]},
         {name:'창조적 업무',sw:['PPT','Infra','Premiere pro','Twinmotion','Unreal'],base:13,color:C[4]},
         {name:'기본적 업무',sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타','공통','미분류','휴가','Word','Trimble','P6'],base:113,color:C[0]},
       ];
+      const cats = tsDefs.length ? tsDefs.map((d,i) => ({
+        name: d.name.replace(' 수행률',''),
+        sw: d.sw || [],
+        base: d.base || 0,
+        color: C[(i+3) % C.length]
+      })) : defaultCats;
       const catData=cats.map(c=>{const total=c.sw.reduce((s,sw)=>s+(latest[sw]||0),0);return{...c,total,rate:c.base>0?Math.round((total/c.base)*100):0};});
 
-      let h=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;">`;
+      let h=`<div style="display:grid;grid-template-columns:repeat(${Math.min(catData.length,3)},1fr);gap:14px;margin-bottom:16px;">`;
       catData.forEach(c=>{
         const g=c.rate>=110?'S':c.rate>=100?'A':c.rate>=90?'B':c.rate>=80?'C':'D';
         h+=`<div style="padding:16px;background:#fff;border:1px solid var(--border);border-radius:16px;"><div style="font-size:14px;color:var(--text-light);margin-bottom:4px;">${c.name}</div><div style="font-size:24px;font-weight:800;letter-spacing:-0.03em;">${c.total.toFixed(1)}<span style="font-size:16px;font-weight:500;color:var(--text-sub);"> / ${c.base}hr</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><div class="pw-progress-track" style="flex:1;"><div class="pw-progress-fill" style="width:${Math.min(c.rate,120)/1.2}%;background:${c.color}"></div></div><span class="rate-badge ${rc(c.rate)}">${c.rate}%</span></div><div style="font-size:14px;color:var(--text-light);margin-top:4px;">등급: <strong style="color:${GRADE_COLOR[g]}">${g}</strong> · ${c.sw.join(', ')}</div></div>`;
@@ -2654,7 +2662,7 @@
       chSW=new Chart(document.getElementById('chartSW'),{type:'bar',data:{labels,datasets:topSW.map((sw,i)=>({label:sw,data:ts.map(r=>r[sw]||0),backgroundColor:C[i%C.length]+'88',borderColor:C[i%C.length],borderWidth:1,borderRadius:3,maxBarThickness:14}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,padding:8,font:{size:10}}},tooltip:{backgroundColor:'#2f3437',titleColor:'#fff',bodyColor:'#fff',padding:8,cornerRadius:6}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'rgba(55,53,47,0.06)',drawBorder:false},ticks:{callback:v=>v+'hr'}}}}});
 
       if(chKPI)chKPI.destroy();
-      chKPI=new Chart(document.getElementById('chartKPICat'),{type:'radar',data:{labels:catData.map(c=>c.name),datasets:[{label:'달성률(%)',data:catData.map(c=>c.rate),backgroundColor:'rgba(35,131,226,0.15)',borderColor:'#2383e2',borderWidth:2,pointBackgroundColor:'#2383e2',pointRadius:4},{label:'기준선(100%)',data:[100,100,100],backgroundColor:'transparent',borderColor:'rgba(47,52,55,0.2)',borderWidth:1,borderDash:[4,4],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,padding:10}},tooltip:{backgroundColor:'#2f3437',titleColor:'#fff',bodyColor:'#fff',padding:8,cornerRadius:6}},scales:{r:{beginAtZero:true,max:140,ticks:{stepSize:20,callback:v=>v+'%'},grid:{color:'rgba(55,53,47,0.08)'}}}}});
+      chKPI=new Chart(document.getElementById('chartKPICat'),{type:'radar',data:{labels:catData.map(c=>c.name),datasets:[{label:'달성률(%)',data:catData.map(c=>c.rate),backgroundColor:'rgba(35,131,226,0.15)',borderColor:'#2383e2',borderWidth:2,pointBackgroundColor:'#2383e2',pointRadius:4},{label:'기준선(100%)',data:catData.map(()=>100),backgroundColor:'transparent',borderColor:'rgba(47,52,55,0.2)',borderWidth:1,borderDash:[4,4],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,padding:10}},tooltip:{backgroundColor:'#2f3437',titleColor:'#fff',bodyColor:'#fff',padding:8,cornerRadius:6}},scales:{r:{beginAtZero:true,max:140,ticks:{stepSize:20,callback:v=>v+'%'},grid:{color:'rgba(55,53,47,0.08)'}}}}});
     }
 
     // ════════════════════════════════════════
@@ -2781,6 +2789,18 @@
       });
     }
 
+    function filterEvPerson() {
+      const team = document.getElementById('evTeamFilter')?.value || '';
+      const sel = document.getElementById('evPerson');
+      if (!sel) return;
+      const curVal = sel.value;
+      sel.innerHTML = '';
+      const filtered = team ? MEM.filter(m => m.team === team) : MEM;
+      filtered.forEach(m => { const o = document.createElement('option'); o.value = m.name; o.textContent = `${m.name} (${m.position||''})`; sel.appendChild(o); });
+      if (filtered.find(m => m.name === curVal)) sel.value = curVal;
+      renderEvaluation();
+    }
+
     async function renderEvaluation() {
       try {
       const year = document.getElementById('evYear')?.value || '2026';
@@ -2810,11 +2830,23 @@
 
     // ── ① 종합 등급표 ──
     function renderEvSummary(months, periodLabel, schedData) {
-      let h = `<div style="margin-bottom:16px;font-size:15px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
+      let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
+        <select id="evSumTeam" class="form-select" style="width:140px;" onchange="renderEvaluation()"><option value="">전체 팀</option></select>
+      </div>`;
+      h += `<div style="margin-bottom:16px;font-size:15px;color:var(--text-sub);">📊 ${periodLabel} · 전 인원 KPI 종합</div>`;
+
+      // Populate team filter
+      setTimeout(()=>{
+        const sel=document.getElementById('evSumTeam');
+        if(sel){const teams=[...new Set(MEM.map(m=>m.team).filter(t=>t))];teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});}
+      },0);
+
+      const evSumTeamFilter = document.getElementById('evSumTeam')?.value || '';
 
       // 같은 KPI 정의를 공유하는 인원끼리 그룹핑
+      const filteredMEM = evSumTeamFilter ? MEM.filter(m => m.team === evSumTeamFilter) : MEM;
       const groups = {};
-      MEM.forEach(m => {
+      filteredMEM.forEach(m => {
         const defs = getKpiDefFor(m.name);
         const key = defs.map(d => d.id).join(',');
         const role = (m.position === '팀장' || m.position === '총괄팀장') ? m.position : '팀원';
@@ -2851,8 +2883,14 @@
     // ── ② 개인 상세 리포트 ──
     function renderEvDetail(months, periodLabel, year, period, schedData) {
       let h = `<div class="database-controls no-print" style="margin-bottom:14px;">
+        <select id="evTeamFilter" class="form-select" style="width:140px;" onchange="filterEvPerson()"><option value="">전체 팀</option></select>
         <select id="evPerson" class="form-select" style="width:160px;" onchange="renderEvaluation()">`;
       MEM.forEach(m => { h += `<option value="${m.name}">${m.name} (${m.position||''})</option>`; });
+      // Populate team filter after render
+      setTimeout(()=>{
+        const tf=document.getElementById('evTeamFilter');
+        if(tf&&tf.options.length<=1){const teams=[...new Set(MEM.map(m=>m.team).filter(t=>t))];teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tf.appendChild(o);});}
+      },0);
       h += `</select><button class="pw-btn primary" onclick="window.print()" style="margin-left:auto;"><i class="ri-printer-line"></i> 인쇄 / PDF</button></div>`;
 
       const person = document.getElementById('evPerson')?.value || MEM[0]?.name || '';
@@ -2885,14 +2923,14 @@
       </div>`;
 
       // KPI detail table
-      h += `<div class="pw-table-wrap"><table class="pw-table"><thead><tr><th style="text-align:left;">KPI 항목</th><th>가중치</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
+      h += `<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>가중치</th><th>실적</th><th>등급</th><th>점수</th><th>가중점수</th></tr></thead><tbody>`;
       items.forEach(it => {
-        h += `<tr><td style="text-align:left;font-weight:600;">${it.name}</td><td>${(it.weight*100).toFixed(0)}%</td>`;
+        h += `<tr><td style="font-weight:600;">${it.name}</td><td>${(it.weight*100).toFixed(0)}%</td>`;
         h += `<td style="font-weight:600;">${it.raw}${it.type==='count'?'건':'%'}</td>`;
         h += `<td><span class="rate-badge ${it.grade==='S'||it.grade==='A'?'high':it.grade==='B'?'mid':'danger'}">${it.grade}</span></td>`;
         h += `<td>${it.score}</td><td style="font-weight:700;">${it.weighted.toFixed(2)}</td></tr>`;
       });
-      h += `<tr class="total-row"><td style="text-align:left;font-weight:800;">합계</td><td>100%</td><td></td>`;
+      h += `<tr class="total-row"><td style="font-weight:800;text-align:center;">합계</td><td>100%</td><td></td>`;
       h += `<td><span class="rate-badge ${fg==='S'||fg==='A'?'high':fg==='B'?'mid':'danger'}">${fg}</span></td><td></td><td style="font-weight:800;">${total.toFixed(2)}</td></tr>`;
       h += '</tbody></table></div>';
 
