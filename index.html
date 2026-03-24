@@ -1982,7 +1982,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v2.4.0';
+    const APP_VER = 'v2.5.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2743,7 +2743,7 @@
       const canConfirm=isAdmin||isSameTeamLeader;
 
       let h=`<div style="margin-bottom:12px;font-size:15px;font-weight:600;">${person} <span style="font-weight:400;color:var(--text-sub);">${mem?.position||''} · ${mem?.team||''} · ${ym}</span></div>`;
-      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>산식/기준</th><th style="width:200px;">실적 입력</th><th>달성률</th><th>등급</th><th>상태</th><th>이력</th></tr></thead><tbody>`;
+      h+=`<div class="pw-table-wrap"><table class="pw-table" style="text-align:center;"><thead><tr><th>KPI 항목</th><th>산식/기준</th><th style="width:180px;">실적 입력</th><th>달성률</th><th>등급</th><th style="min-width:200px;">증빙 메모</th><th>상태</th><th>이력</th></tr></thead><tbody>`;
 
       let allConfirmed=true, hasDraft=false;
       inputItems.forEach(kpi=>{
@@ -2784,6 +2784,8 @@
 
         h+=`<td style="font-weight:700;">${val}%</td>`;
         h+=`<td><span class="rate-badge ${grade==='S'||grade==='A'?'high':grade==='B'?'mid':'danger'}" style="min-width:32px;">${grade}</span></td>`;
+        const memoVal=(saved?.memo||'').replace(/"/g,'&quot;');
+        h+=`<td style="text-align:left;"><textarea class="form-input" style="width:100%;min-width:180px;height:36px;font-size:12px;resize:vertical;padding:6px 8px;" placeholder="증빙 내용 입력 (링크/메모)" id="ks_m_${kpi.id}" onblur="saveMemo('${ym}','${person}','${kpi.id}')">${saved?.memo||''}</textarea></td>`;
         const confirmedInfo='';
         h+=`<td>${statusBadge}${confirmedInfo}</td>`;
         h+=`<td><button class="pw-btn" style="height:26px;padding:0 8px;font-size:12px;" onclick="showKpiHistory('${ym}','${person}','${kpi.id}','${kpi.name}')"><i class="ri-history-line"></i></button></td>`;
@@ -2816,12 +2818,28 @@
       const v=parseFloat(value)||0;
       const n=parseFloat(numerator)||0;
       const d=parseFloat(denominator)||0;
+      const memo=document.getElementById('ks_m_'+itemId)?.value||'';
       const idx=KPI_SCORES.findIndex(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
-      if(idx>=0){KPI_SCORES[idx].value=v;KPI_SCORES[idx].numerator=n;KPI_SCORES[idx].denominator=d;KPI_SCORES[idx].status='draft';}
-      else KPI_SCORES.push({yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v,status:'draft',inputBy:USER?.name||'',confirmedBy:''});
-      if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v});
+      if(idx>=0){KPI_SCORES[idx].value=v;KPI_SCORES[idx].numerator=n;KPI_SCORES[idx].denominator=d;KPI_SCORES[idx].status='draft';KPI_SCORES[idx].memo=memo;}
+      else KPI_SCORES.push({yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v,status:'draft',inputBy:USER?.name||'',confirmedBy:'',memo});
+      if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,numerator:n,denominator:d,value:v,memo});
       renderKpiScoreInput();
       toast('저장됨','success');
+    }
+
+    async function saveMemo(ym,person,itemId){
+      const memo=document.getElementById('ks_m_'+itemId)?.value||'';
+      const sc=KPI_SCORES.find(s=>s.yearMonth===ym&&s.person===person&&s.itemId===itemId);
+      if(sc){
+        sc.memo=memo;
+        if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,numerator:sc.numerator||0,denominator:sc.denominator||0,value:sc.value||0,memo});
+        toast('메모 저장됨','success');
+      } else {
+        // 아직 실적 없으면 0으로 생성 + 메모
+        KPI_SCORES.push({yearMonth:ym,person,itemId,numerator:0,denominator:0,value:0,status:'draft',inputBy:USER?.name||'',confirmedBy:'',memo});
+        if(GAS_URL)apiP({action:'saveKpiScore',yearMonth:ym,person,itemId,numerator:0,denominator:0,value:0,memo});
+        toast('메모 저장됨','success');
+      }
     }
 
     async function confirmAllKpi(ym,person){
@@ -2874,6 +2892,7 @@
             <div><span style="font-size:14px;font-weight:600;">현재 실적:</span> <span style="font-size:16px;font-weight:700;color:var(--blue);">${valDisp}</span></div>
             <div style="font-size:13px;color:var(--text-sub);">입력: ${sc.inputBy} · ${sc.inputAt||''}</div>
           </div>
+          ${sc.memo?`<div style="margin-top:8px;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:13px;"><i class="ri-attachment-2" style="color:var(--text-light);margin-right:4px;"></i>${sc.memo}</div>`:''}
           ${sc.status==='confirmed'&&sc.confirmedBy?`<div style="margin-top:8px;padding:8px 12px;background:rgba(52,199,89,0.08);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:14px;font-weight:600;color:var(--green);">✓ 승인 완료</span>
             <span style="font-size:13px;color:var(--text-sub);">승인자: ${sc.confirmedBy} · ${sc.confirmedAt||''}</span>
