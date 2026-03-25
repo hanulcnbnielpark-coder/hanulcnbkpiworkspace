@@ -1647,10 +1647,10 @@
             <button class="pw-btn primary" onclick="toggleRegMenu()">
               <i class="ri-add-line"></i> 등록
             </button>
-            <div id="regMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:170px;z-index:999;overflow:hidden;">
-              <div onclick="closeRegMenu();openAddModal()" style="padding:11px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;color:var(--text);white-space:nowrap;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regDataItem"><i class="ri-file-add-line" style="font-size:17px;color:var(--blue);width:20px;text-align:center;"></i>데이터 등록</div>
-              <div style="margin:0 12px;border-top:1px solid var(--border-light);" id="regDivider"></div>
-              <div onclick="closeRegMenu();openProjAddModal()" style="padding:11px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;color:var(--text);white-space:nowrap;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regProjItem"><i class="ri-building-line" style="font-size:17px;color:var(--green);width:20px;text-align:center;"></i>프로젝트 등록</div>
+            <div id="regMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:172px;z-index:999;overflow:hidden;padding:4px 0;">
+              <div onclick="closeRegMenu();openAddModal()" style="padding:9px 14px;cursor:pointer;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);border-radius:6px;margin:0 4px;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regDataItem"><i class="ri-file-add-line" style="font-size:15px;color:var(--blue);"></i> 데이터 등록</div>
+              <div style="margin:3px 12px;border-top:1px solid var(--border-light);" id="regDivider"></div>
+              <div onclick="closeRegMenu();openProjAddModal()" style="padding:9px 14px;cursor:pointer;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);border-radius:6px;margin:0 4px;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regProjItem"><i class="ri-building-line" style="font-size:15px;color:var(--green);"></i> 프로젝트 등록</div>
             </div>
           </div>
         </div>
@@ -2040,7 +2040,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.3.1';
+    const APP_VER = 'v3.3.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
