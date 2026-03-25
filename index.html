@@ -2040,7 +2040,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.3.5';
+    const APP_VER = 'v3.3.6';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2518,7 +2518,7 @@
       if(ps.options.length<=1){PROJ.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});}
       if(pm.options.length<=1){const filt=tf?.value?MEM.filter(m=>m.team===tf.value):MEM;filt.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;pm.appendChild(o);});}
       let d=DATA;if(ps.value)d=d.filter(r=>r.project===ps.value);if(tf?.value){const names=MEM.filter(m=>m.team===tf.value).map(m=>m.name);d=d.filter(r=>names.includes(r.person));}if(pm.value)d=d.filter(r=>r.person===pm.value);
-      let h='<tr><th style="width:28px;"></th><th style="text-align:left;min-width:130px;">업무</th><th>담당자</th><th>목표</th><th style="background:#e3f2fd;color:#1565c0;">마감일</th><th style="background:#e8f5e9;color:#2e7d32;">마감<br>목표</th>';
+      let h='<tr><th style="width:28px;"></th><th style="text-align:center;min-width:130px;">업무</th><th>담당자</th><th>목표</th><th style="background:#e3f2fd;color:#1565c0;">마감일</th><th style="background:#e8f5e9;color:#2e7d32;">마감<br>목표</th>';
       for(let i=1;i<=dim;i++){const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;h+=`<th class="day-cell${we?' weekend':''}${isT&&i===td?' today':''}">${i}<br><span style="font-size:11px;opacity:0.5">${dn[dow]}</span></th>`;}
       h+='<th>합계</th><th>달성률</th><th style="background:#fff3e0;color:#e65100;">투입률</th></tr>';document.getElementById('monthlyHead').innerHTML=h;
       const gr={};d.forEach(r=>{if(!gr[r.project])gr[r.project]=[];gr[r.project].push(r);});
@@ -2538,12 +2538,13 @@
 
           b+='<tr>';
           b+=`<td style="padding:2px;text-align:center;"><button onclick="deleteDataRow(${r.rowIndex})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'" onmouseout="this.style.color='var(--text-light)';this.style.background='none'" title="삭제"><i class="ri-delete-bin-line"></i></button></td>`;
-          b+=`<td class="text-left"><input class="day-input" style="width:100%;text-align:left;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.rowIndex}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
+          b+=`<td><input class="day-input" style="width:100%;text-align:center;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.rowIndex}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
           b+=`<td><select class="day-input" style="width:100%;height:24px;font-size:14px;-webkit-appearance:none;padding:0 2px;" data-row="${r.rowIndex}" data-field="person" onchange="editMeta(this)">`;
           MEM.forEach(m=>{b+=`<option value="${m.name}"${m.name===r.person?' selected':''}>${m.name}</option>`;});
           b+=`</select></td>`;
           b+=`<td><input class="day-input" style="width:32px;" value="${r.targetDays}" data-row="${r.rowIndex}" data-col="targetDays" onfocus="this.select()" onblur="hT(this)" onkeydown="nk(event,this)"></td>`;
-          b+=`<td style="background:#e3f2fd;"><input class="day-input" style="width:32px;background:transparent;" value="${msDay||''}" placeholder="-" data-row="${r.rowIndex}" data-col="milestoneDay" onfocus="this.select()" onblur="hMs(this)" onkeydown="nk(event,this)"></td>`;
+          const msDow=msDay?dn[new Date(Y,M-1,msDay).getDay()]:'';
+          b+=`<td style="background:#e3f2fd;text-align:center;padding:2px;"><input class="day-input" style="width:32px;background:transparent;" value="${msDay||''}" placeholder="-" data-row="${r.rowIndex}" data-col="milestoneDay" onfocus="this.select()" onblur="hMs(this)" onkeydown="nk(event,this)">${msDay?`<div style="font-size:10px;color:#1565c0;margin-top:-2px;line-height:1;">${msDow}</div>`:''}</td>`;
           b+=`<td style="background:#e8f5e9;"><input class="day-input" style="width:32px;background:transparent;" value="${msTgt||''}" placeholder="-" data-row="${r.rowIndex}" data-col="milestoneTarget" onfocus="this.select()" onblur="hMsT(this)" onkeydown="nk(event,this)"></td>`;
           for(let i=1;i<=dim;i++){
             const v=r.days[i]!==undefined?r.days[i]:'';
