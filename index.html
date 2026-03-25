@@ -1982,7 +1982,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.1.0';
+    const APP_VER = 'v3.1.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2459,7 +2459,7 @@
       let d=DATA;if(ps.value)d=d.filter(r=>r.project===ps.value);if(tf?.value){const names=MEM.filter(m=>m.team===tf.value).map(m=>m.name);d=d.filter(r=>names.includes(r.person));}if(pm.value)d=d.filter(r=>r.person===pm.value);
       let h='<tr><th style="width:28px;"></th><th style="text-align:left;min-width:130px;">업무</th><th>담당자</th><th>목표</th><th style="background:#fff8e1;">마감일</th><th style="background:#fff8e1;">마감<br>목표</th>';
       for(let i=1;i<=dim;i++){const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;h+=`<th class="day-cell${we?' weekend':''}${isT&&i===td?' today':''}">${i}<br><span style="font-size:11px;opacity:0.5">${dn[dow]}</span></th>`;}
-      h+='<th>합계</th><th>달성률</th><th style="background:#fff8e1;">마감<br>달성률</th></tr>';document.getElementById('monthlyHead').innerHTML=h;
+      h+='<th>합계</th><th>달성률</th><th style="background:#fff8e1;">투입률</th></tr>';document.getElementById('monthlyHead').innerHTML=h;
       const gr={};d.forEach(r=>{if(!gr[r.project])gr[r.project]=[];gr[r.project].push(r);});
       let b='';Object.entries(gr).forEach(([proj,rows])=>{
         b+=`<tr class="summary-row"><td colspan="${dim+9}" style="text-align:left;padding-left:14px;font-weight:800;"><span>${proj}</span><button onclick="openAddModalWith('${proj.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-light);cursor:pointer;font-size:14px;padding:1px 8px;border-radius:6px;margin-left:10px;font-family:var(--font);" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-light)'"><i class="ri-add-line" style="font-size:14px;"></i> 행 추가</button></td></tr>`;
