@@ -1643,14 +1643,16 @@
           <button class="pw-btn" onclick="refreshData()">
             <i class="ri-refresh-line"></i> 새로고침
           </button>
-          <button class="pw-btn primary" onclick="toggleRegMenu()" style="position:relative;" id="regBtn">
-            <i class="ri-add-line"></i> 등록
-            <div id="regMenu" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;z-index:999;overflow:hidden;">
-              <div onclick="event.stopPropagation();closeRegMenu();openAddModal()" style="padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'"><i class="ri-file-add-line" style="font-size:16px;color:var(--blue);"></i> 데이터 등록</div>
-              <div style="border-top:1px solid var(--border-light);"></div>
-              <div onclick="event.stopPropagation();closeRegMenu();openProjAddModal()" style="padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regProjItem"><i class="ri-building-line" style="font-size:16px;color:var(--green);"></i> 프로젝트 등록</div>
+          <div style="position:relative;" id="regBtn">
+            <button class="pw-btn primary" onclick="toggleRegMenu()">
+              <i class="ri-add-line"></i> 등록
+            </button>
+            <div id="regMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:170px;z-index:999;overflow:hidden;">
+              <div onclick="closeRegMenu();openAddModal()" style="padding:11px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;color:var(--text);white-space:nowrap;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regDataItem"><i class="ri-file-add-line" style="font-size:17px;color:var(--blue);width:20px;text-align:center;"></i>데이터 등록</div>
+              <div style="margin:0 12px;border-top:1px solid var(--border-light);" id="regDivider"></div>
+              <div onclick="closeRegMenu();openProjAddModal()" style="padding:11px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;color:var(--text);white-space:nowrap;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regProjItem"><i class="ri-building-line" style="font-size:17px;color:var(--green);width:20px;text-align:center;"></i>프로젝트 등록</div>
             </div>
-          </button>
+          </div>
         </div>
       </header>
 
@@ -2038,7 +2040,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.3.0';
+    const APP_VER = 'v3.3.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2132,6 +2134,8 @@
         const req = el.dataset.requireRole;
         el.style.display = USER.role === req ? '' : 'none';
       });
+      // 등록 버튼: viewer는 숨김
+      const rb=document.getElementById('regBtn');if(rb)rb.style.display=USER.role==='viewer'?'none':'';
     }
 
     // ─── KPI Definitions from Sheet 1 ───
@@ -3615,8 +3619,11 @@
     }
     // ── 등록 드롭다운 메뉴 ──
     function toggleRegMenu(){const m=document.getElementById('regMenu');m.style.display=m.style.display==='none'?'block':'none';
-      // 프로젝트 등록은 admin/manager만
-      const pi=document.getElementById('regProjItem');if(pi)pi.style.display=(USER?.role==='admin'||USER?.role==='manager')?'':'none';
+      // admin/manager: 둘 다 | user: 데이터만 | viewer: 없음
+      const role=USER?.role||'user';
+      const canProj=role==='admin'||role==='manager';
+      document.getElementById('regProjItem').style.display=canProj?'':'none';
+      document.getElementById('regDivider').style.display=canProj?'':'none';
     }
     function closeRegMenu(){document.getElementById('regMenu').style.display='none';}
     document.addEventListener('click',e=>{const b=document.getElementById('regBtn');if(b&&!b.contains(e.target))closeRegMenu();});
