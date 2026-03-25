@@ -1564,6 +1564,11 @@
           <span class="icon"><i class="ri-team-line"></i></span>
           <span class="label">인별 현황</span>
         </div>
+
+        <div class="nav-item" data-view="projmgr" onclick="goView('projmgr')">
+          <span class="icon"><i class="ri-building-line"></i></span>
+          <span class="label">프로젝트 관리</span>
+        </div>
       </div>
 
       <div class="sidebar-group">
@@ -1638,8 +1643,13 @@
           <button class="pw-btn" onclick="refreshData()">
             <i class="ri-refresh-line"></i> 새로고침
           </button>
-          <button class="pw-btn primary" onclick="openAddModal()">
+          <button class="pw-btn primary" onclick="toggleRegMenu()" style="position:relative;" id="regBtn">
             <i class="ri-add-line"></i> 등록
+            <div id="regMenu" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;z-index:999;overflow:hidden;">
+              <div onclick="event.stopPropagation();closeRegMenu();openAddModal()" style="padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'"><i class="ri-file-add-line" style="font-size:16px;color:var(--blue);"></i> 데이터 등록</div>
+              <div style="border-top:1px solid var(--border-light);"></div>
+              <div onclick="event.stopPropagation();closeRegMenu();openProjAddModal()" style="padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--text);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" id="regProjItem"><i class="ri-building-line" style="font-size:16px;color:var(--green);"></i> 프로젝트 등록</div>
+            </div>
           </button>
         </div>
       </header>
@@ -1870,6 +1880,15 @@
             <div id="evalContent"></div>
           </div>
 
+          <!-- Project Management -->
+          <div class="view-panel" id="view-projmgr">
+            <div class="section-header" style="margin-bottom: 16px;">
+              <div class="circle"></div>
+              <span class="title">프로젝트 관리</span>
+            </div>
+            <div id="projMgrArea"></div>
+          </div>
+
           <!-- Settings -->
           <div class="view-panel" id="view-settings">
             <div class="section-header" style="margin-bottom: 16px;">
@@ -1905,6 +1924,13 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">담당팀</label>
+          <select id="mdlTeam" class="form-select" onchange="filterMdlPerson()">
+            <option value="">전체 팀</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">담당자</label>
           <select id="mdlPerson" class="form-select"></select>
         </div>
@@ -1918,6 +1944,36 @@
       <div class="m-footer">
         <button class="pw-btn" onclick="closeModal()">취소</button>
         <button class="pw-btn primary" onclick="submitAdd()">등록</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Add Modal -->
+  <div class="modal-overlay" id="projAddModal">
+    <div class="modal-pw" style="max-width:440px;">
+      <div class="m-header">
+        <span class="m-title">프로젝트 등록</span>
+        <button class="m-close" onclick="closeProjModal()">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="m-body">
+        <div class="form-group">
+          <label class="form-label">프로젝트명</label>
+          <input type="text" id="mdlProjName" class="form-input" placeholder="프로젝트명 입력" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">상태</label>
+          <select id="mdlProjStatus" class="form-select">
+            <option value="진행중">진행중</option>
+            <option value="대기">대기</option>
+            <option value="완료">완료</option>
+          </select>
+        </div>
+      </div>
+      <div class="m-footer">
+        <button class="pw-btn" onclick="closeProjModal()">취소</button>
+        <button class="pw-btn primary" onclick="submitProjAdd()">등록</button>
       </div>
     </div>
   </div>
@@ -1982,7 +2038,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.2.0';
+    const APP_VER = 'v3.3.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2000,8 +2056,8 @@
 
     // Role → 접근 가능 뷰 매핑
     const ROLE_VIEWS = {
-      admin:   ['overview','monthly','daily','person','scorecard','kpiscore','timesheet','evaluation','settings'],
-      manager: ['overview','monthly','daily','person','scorecard','kpiscore','timesheet','evaluation'],
+      admin:   ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','timesheet','evaluation','settings'],
+      manager: ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','timesheet','evaluation'],
       user:    ['overview','monthly','daily','person','scorecard','kpiscore'],
       viewer:  ['overview','person'],
     };
@@ -2388,7 +2444,8 @@
       scorecard:{title:'KPI 스코어카드',sub:'5개 KPI 항목별 가중치 기반 종합 등급을 산정합니다.',icon:'ri-medal-line'},
       timesheet:{title:'타임시트 분석',sub:'소프트웨어별 업무 수행시간과 KPI 카테고리별 달성률을 분석합니다.',icon:'ri-pie-chart-line'},
       evaluation:{title:'평가 리포트',sub:'상·하반기 인사평가용 KPI 종합 리포트를 생성합니다.',icon:'ri-file-chart-line'},
-      settings:{title:'기본정보관리',sub:'Google Sheets 연결, 프로젝트 및 인원 정보를 관리합니다.',icon:'ri-settings-3-line'},
+      projmgr:{title:'프로젝트 관리',sub:'프로젝트 등록·수정·삭제와 상태를 관리합니다.',icon:'ri-building-line'},
+      settings:{title:'기본정보관리',sub:'Google Sheets 연결, 인원 및 계정 정보를 관리합니다.',icon:'ri-settings-3-line'},
     };
 
     function goView(v){
@@ -2397,7 +2454,7 @@
       const m=viewMeta[v];if(m){document.getElementById('pageTitle').textContent=m.title;document.getElementById('pageSubtitle').textContent=m.sub;document.getElementById('pageIcon').innerHTML=`<i class="${m.icon}"></i>`;}
       renderV();
     }
-    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,scorecard:renderScorecard,kpiscore:renderKpiScoreInput,timesheet:renderTimesheet,evaluation:renderEvaluation,settings:renderStg}[VIEW]||(_=>{}))();}
+    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,projmgr:renderProjMgr,scorecard:renderScorecard,kpiscore:renderKpiScoreInput,timesheet:renderTimesheet,evaluation:renderEvaluation,settings:renderStg}[VIEW]||(_=>{}))();}
     function changeMonth(d){M+=d;if(M>12){M=1;Y++;}if(M<1){M=12;Y--;}updML();refreshData();}
     function updML(){const s=`${Y}년 ${String(M).padStart(2,'0')}월`;document.getElementById('monthLabel').textContent=s;document.getElementById('pageMonthLabel').textContent=s;}
 
@@ -3472,10 +3529,6 @@
       let h='';
       // GAS
       h+=`<div class="settings-block"><h3><i class="ri-link"></i> Google Apps Script 연결</h3><div class="config-row"><div class="form-group"><label class="form-label">GAS 웹앱 URL</label><input type="text" id="gasIn" class="form-input" placeholder="https://script.google.com/macros/s/..." value="${GAS_URL}"></div><button class="pw-btn primary" onclick="saveGas()" style="height:36px;">연결</button></div><div style="font-size:14px;color:var(--text-light);margin-top:8px;">* GAS 웹앱 URL이 변경된 경우에만 수정하세요</div></div>`;
-      // 프로젝트
-      h+=`<div class="settings-block"><h3><i class="ri-building-line"></i> 프로젝트 관리</h3><div class="config-row"><div class="form-group"><input type="text" id="nPN" class="form-input" placeholder="프로젝트명"></div><button class="pw-btn" onclick="addProj()"><i class="ri-add-line"></i> 추가</button></div><div class="list-block">`;
-      PROJ.forEach((p,i)=>{const sc=p.status==='진행중'?'var(--green)':p.status==='완료'?'var(--text-light)':'var(--orange)';h+=`<div class="list-row" style="justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span style="width:7px;height:7px;border-radius:50%;background:${sc};flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span></div><div style="display:flex;gap:4px;flex-shrink:0;"><select class="form-select" style="width:78px;height:26px;font-size:12px;padding:0 4px;border-radius:6px;" onchange="chProjSt(${i},this.value)"><option value="진행중"${p.status==='진행중'?' selected':''}>진행중</option><option value="대기"${p.status==='대기'?' selected':''}>대기</option><option value="완료"${p.status==='완료'?' selected':''}>완료</option></select><button onclick="delProj(${i})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'"><i class="ri-delete-bin-line"></i></button></div></div>`;});
-      h+='</div></div>';
       // 인원
       h+=`<div class="settings-block"><h3><i class="ri-team-line"></i> 인원 관리</h3><div class="config-row" style="gap:6px;"><div class="form-group"><input type="text" id="nMN" class="form-input" placeholder="이름"></div><div class="form-group" style="max-width:110px;"><input type="text" id="nMT" class="form-input" placeholder="팀 (BIM수행팀)" value="BIM수행팀"></div><div class="form-group" style="max-width:100px;"><input type="text" id="nMP" class="form-input" placeholder="직급"></div><button class="pw-btn" onclick="addMem()"><i class="ri-add-line"></i></button></div><div class="list-block">`;
       MEM.forEach((m,i)=>{h+=`<div class="list-row" style="justify-content:space-between;padding:6px 10px;">
@@ -3499,11 +3552,6 @@
       h+=`<div class="settings-block"><h3><i class="ri-database-line"></i> 시트 초기화</h3><p style="font-size:15px;color:var(--text-sub);margin-bottom:10px;">Google Sheets에 필요한 시트 구조를 자동 생성합니다.</p><button class="pw-btn dark" onclick="initSh()"><i class="ri-magic-line"></i> 시트 구조 생성</button></div>`;
       document.getElementById('settingsArea').innerHTML=h;
     }
-
-    // ── Project CRUD ──
-    function addProj(){try{const n=document.getElementById('nPN').value.trim();if(!n){toast('프로젝트명을 입력하세요','error');return;}PROJ.push({name:n,status:'진행중'});document.getElementById('nPN').value='';renderStg();toast('프로젝트 추가: '+n,'success');if(GAS_URL)apiP({action:'addProject',name:n}).then(r=>{if(r?.error)toast('서버 저장 실패','error');});}catch(e){toast('오류: '+e.message,'error');}}
-    function chProjSt(i,s){const old=PROJ[i].status;PROJ[i].status=s;renderStg();toast('상태 변경','success');if(GAS_URL)apiP({action:'updateProject',name:PROJ[i].name,status:s}).then(r=>{if(r?.error){PROJ[i].status=old;renderStg();toast('서버 저장 실패','error');}});}
-    function delProj(i){if(!confirm('"'+PROJ[i].name+'" 삭제?'))return;const removed=PROJ.splice(i,1)[0];renderStg();toast('삭제됨','success');if(GAS_URL)apiP({action:'deleteProject',name:removed.name}).then(r=>{if(r?.error){PROJ.splice(i,0,removed);renderStg();toast('서버 삭제 실패','error');}});}
 
     // ── Member CRUD ──
     function addMem(){try{const n=document.getElementById('nMN').value.trim(),p=document.getElementById('nMP')?.value.trim()||'',t=document.getElementById('nMT')?.value.trim()||'BIM수행팀';if(!n){toast('이름을 입력하세요','error');return;}MEM.push({name:n,team:t,position:p});document.getElementById('nMN').value='';if(document.getElementById('nMP'))document.getElementById('nMP').value='';renderStg();toast('인원 추가: '+n,'success');if(GAS_URL)apiP({action:'addMember',name:n,team:t,position:p}).then(r=>{if(r?.error)toast('서버 저장 실패','error');});}catch(e){toast('오류: '+e.message,'error');}}
@@ -3552,7 +3600,64 @@
     // ─── Modal ───
     function openAddModal(){popDD();document.getElementById('addModal').classList.add('open');}
     function closeModal(){document.getElementById('addModal').classList.remove('open');}
-    function popDD(){const ps=document.getElementById('mdlProject'),pm=document.getElementById('mdlPerson');ps.innerHTML='';PROJ.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});pm.innerHTML='';MEM.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=`${m.name} (${m.position||''})`;pm.appendChild(o);});}
+    function popDD(){
+      const ps=document.getElementById('mdlProject'),pm=document.getElementById('mdlPerson'),tm=document.getElementById('mdlTeam');
+      ps.innerHTML='';PROJ.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});
+      tm.innerHTML='<option value="">전체 팀</option>';getTeams().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tm.appendChild(o);});
+      pm.innerHTML='';MEM.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=`${m.name} (${m.position||''})`;pm.appendChild(o);});
+    }
+    function filterMdlPerson(){
+      const t=document.getElementById('mdlTeam').value,pm=document.getElementById('mdlPerson');
+      const prev=pm.value;pm.innerHTML='';
+      const list=t?MEM.filter(m=>m.team===t):MEM;
+      list.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=`${m.name} (${m.position||''})`;pm.appendChild(o);});
+      if(list.find(m=>m.name===prev))pm.value=prev;
+    }
+    // ── 등록 드롭다운 메뉴 ──
+    function toggleRegMenu(){const m=document.getElementById('regMenu');m.style.display=m.style.display==='none'?'block':'none';
+      // 프로젝트 등록은 admin/manager만
+      const pi=document.getElementById('regProjItem');if(pi)pi.style.display=(USER?.role==='admin'||USER?.role==='manager')?'':'none';
+    }
+    function closeRegMenu(){document.getElementById('regMenu').style.display='none';}
+    document.addEventListener('click',e=>{const b=document.getElementById('regBtn');if(b&&!b.contains(e.target))closeRegMenu();});
+    // ── 프로젝트 등록 모달 ──
+    function openProjAddModal(){document.getElementById('projAddModal').classList.add('open');document.getElementById('mdlProjName').value='';document.getElementById('mdlProjStatus').value='진행중';}
+    function closeProjModal(){document.getElementById('projAddModal').classList.remove('open');}
+    async function submitProjAdd(){
+      const n=document.getElementById('mdlProjName').value.trim(),st=document.getElementById('mdlProjStatus').value;
+      if(!n){toast('프로젝트명을 입력하세요','error');return;}
+      PROJ.push({name:n,status:st});closeProjModal();renderV();toast('프로젝트 추가: '+n,'success');
+      if(GAS_URL)apiP({action:'addProject',name:n,status:st}).then(r=>{if(r?.error)toast('서버 저장 실패','error');});
+    }
+    // ── 프로젝트 관리 뷰 ──
+    function renderProjMgr(){
+      let h='<div class="settings-block"><div class="config-row"><div class="form-group"><input type="text" id="nProjName" class="form-input" placeholder="프로젝트명"></div><div class="form-group" style="max-width:100px;"><select id="nProjSt" class="form-select" style="height:36px;"><option value="진행중">진행중</option><option value="대기">대기</option><option value="완료">완료</option></select></div><button class="pw-btn" onclick="addProjFromMgr()"><i class="ri-add-line"></i> 추가</button></div>';
+      h+='<div class="list-block" style="margin-top:12px;">';
+      PROJ.forEach((p,i)=>{
+        const sc=p.status==='진행중'?'#10b981':p.status==='대기'?'#f59e0b':'#999';
+        h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-light);">
+          <span style="width:8px;height:8px;border-radius:50%;background:${sc};flex-shrink:0;"></span>
+          <span style="flex:1;font-size:15px;">${p.name}</span>
+          <select onchange="chProjSt(${i},this.value)" class="form-select" style="width:80px;height:30px;font-size:13px;padding:0 6px;">
+            <option value="진행중"${p.status==='진행중'?' selected':''}>진행중</option>
+            <option value="대기"${p.status==='대기'?' selected':''}>대기</option>
+            <option value="완료"${p.status==='완료'?' selected':''}>완료</option>
+          </select>
+          <button onclick="delProj(${i})" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:18px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'"><i class="ri-delete-bin-line"></i></button>
+        </div>`;
+      });
+      h+='</div></div>';
+      document.getElementById('projMgrArea').innerHTML=h;
+    }
+    function addProjFromMgr(){
+      const n=document.getElementById('nProjName').value.trim(),st=document.getElementById('nProjSt').value;
+      if(!n){toast('프로젝트명을 입력하세요','error');return;}
+      PROJ.push({name:n,status:st});document.getElementById('nProjName').value='';renderProjMgr();toast('프로젝트 추가: '+n,'success');
+      if(GAS_URL)apiP({action:'addProject',name:n,status:st}).then(r=>{if(r?.error)toast('서버 저장 실패','error');});
+    }
+    function chProjSt(i,st){PROJ[i].status=st;renderProjMgr();toast('상태 변경: '+PROJ[i].name+' → '+st,'success');if(GAS_URL)apiP({action:'updateProject',index:i,name:PROJ[i].name,status:st});}
+    function delProj(i){if(!confirm(PROJ[i].name+' 프로젝트를 삭제하시겠습니까?'))return;const nm=PROJ[i].name;PROJ.splice(i,1);renderProjMgr();toast('삭제: '+nm,'success');if(GAS_URL)apiP({action:'deleteProject',name:nm});}
+
     async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseInt(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}const newRow={rowIndex:DATA.length+2,yearMonth:ym,project:proj,task,person,targetDays:target,days:{},totalWorked:0,achievementRate:0};DATA.push(newRow);closeModal();document.getElementById('mdlTask').value='';renderV();toast('등록 완료','success');if(GAS_URL)apiP({action:'saveRow',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}}).then(r=>{if(r?.success&&r.rowIndex)newRow.rowIndex=r.rowIndex;if(r?.error)toast('서버 저장 실패','error');});}
 
     // ─── Settings ───
