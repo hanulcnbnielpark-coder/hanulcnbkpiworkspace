@@ -1982,7 +1982,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.0.2';
+    const APP_VER = 'v3.0.3';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2443,7 +2443,7 @@
       const g={};DATA.forEach(r=>{if(!g[r.project])g[r.project]=[];g[r.project].push(r);});
       const tt=DATA.reduce((s,r)=>s+r.targetDays,0),tw=DATA.reduce((s,r)=>s+r.totalWorked,0),ar=DATA.length?Math.round(DATA.reduce((s,r)=>s+r.achievementRate,0)/DATA.length):0;
       let b=`<tr class="total-row"><td style="text-align:left;font-weight:800;">총계</td><td>${[...new Set(DATA.map(r=>r.person))].length}명</td><td>${DATA.length}건</td><td>${tt}</td><td>${tw}</td><td><span class="rate-badge ${rc(ar)}">${ar}%</span></td><td>${gl(ar)}</td></tr>`;
-      Object.entries(g).forEach(([proj,rows])=>{const pt=rows.reduce((s,r)=>s+r.targetDays,0),pw=rows.reduce((s,r)=>s+r.totalWorked,0),pr=Math.round(rows.reduce((s,r)=>s+r.achievementRate,0)/rows.length);b+=`<tr class="sub-total"><td style="text-align:left;">${proj.length>24?proj.substring(0,24)+'…':proj}</td><td>${rows.length}명</td><td>${rows.length}건</td><td>${pt}</td><td>${pw}</td><td><span class="rate-badge ${rc(pr)}">${pr}%</span></td><td>${gl(pr)}</td></tr>`;rows.forEach(r=>{b+=`<tr><td></td><td>${r.person}</td><td class="text-left" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.task}">${r.task}</td><td>${r.targetDays}</td><td>${r.totalWorked}</td><td><span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span></td><td>${gl(r.achievementRate)}</td></tr>`;});});
+      Object.entries(g).forEach(([proj,rows])=>{const pt=rows.reduce((s,r)=>s+r.targetDays,0),pw=rows.reduce((s,r)=>s+r.totalWorked,0),pr=Math.round(rows.reduce((s,r)=>s+r.achievementRate,0)/rows.length);b+=`<tr class="sub-total"><td style="text-align:left;">${proj.length>24?proj.substring(0,24)+'…':proj}</td><td>${rows.length}명</td><td>${rows.length}건</td><td>${pt}</td><td>${pw}</td><td><span class="rate-badge ${rc(pr)}">${pr}%</span></td><td>${gl(pr)}</td></tr>`;rows.forEach(r=>{b+=`<tr><td></td><td>${r.person}</td><td class="text-left" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${String(r.task||'')}">${r.task}</td><td>${r.targetDays}</td><td>${r.totalWorked}</td><td><span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span></td><td>${gl(r.achievementRate)}</td></tr>`;});});
       document.getElementById('overviewBody').innerHTML=b;
     }
 
@@ -2476,7 +2476,7 @@
 
           b+='<tr>';
           b+=`<td style="padding:2px;text-align:center;"><button onclick="deleteDataRow(${r.rowIndex})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'" onmouseout="this.style.color='var(--text-light)';this.style.background='none'" title="삭제"><i class="ri-delete-bin-line"></i></button></td>`;
-          b+=`<td class="text-left"><input class="day-input" style="width:100%;text-align:left;height:24px;font-size:14px;" value="${(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.rowIndex}" data-field="task" onblur="editMeta(this)" title="${r.task}"></td>`;
+          b+=`<td class="text-left"><input class="day-input" style="width:100%;text-align:left;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.rowIndex}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
           b+=`<td><select class="day-input" style="width:100%;height:24px;font-size:14px;-webkit-appearance:none;padding:0 2px;" data-row="${r.rowIndex}" data-field="person" onchange="editMeta(this)">`;
           MEM.forEach(m=>{b+=`<option value="${m.name}"${m.name===r.person?' selected':''}>${m.name}</option>`;});
           b+=`</select></td>`;
