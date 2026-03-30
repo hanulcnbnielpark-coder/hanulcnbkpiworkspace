@@ -2110,7 +2110,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.4';
+    const APP_VER = 'v3.5.5';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3238,7 +3238,7 @@
 
     function eaRenderPerson(data){
       const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
-      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="min-width:900px"><thead><tr><th style="width:70px">작업자</th><th class="l" style="min-width:160px;max-width:200px">과업명</th><th style="width:46px">구분</th>';
+      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="width:100%;table-layout:fixed"><thead><tr><th style="width:70px">작업자</th><th class="l">과업명</th><th style="width:46px">구분</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:80px">비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
@@ -3249,7 +3249,7 @@
           const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
           let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
           h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
-          h+='<td class="pj"><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+p.replace(/"/g,'&quot;')+'">'+p+'</div></td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          h+='<td class="pj"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+p.replace(/"/g,'&quot;')+'">'+p+'</div></td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
           days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
           h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
         });
