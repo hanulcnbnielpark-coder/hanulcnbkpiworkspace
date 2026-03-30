@@ -2112,7 +2112,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.1';
+    const APP_VER = 'v3.6.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3243,7 +3243,7 @@
       const nDays=days.length;
       const dayW=Math.floor(52/nDays*nDays);
       let h='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl">';
-      h+='<thead><tr><th style="width:60px">작업자</th><th class="l" style="width:35%">과업명</th><th style="width:42px">구분</th>';
+      h+='<thead><tr><th style="width:60px">작업자</th><th style="width:35%">과업명</th><th style="width:42px">구분</th>';
       days.forEach(d=>{h+='<th style="width:52px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:50px">합계</th><th style="width:76px">비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
@@ -3276,7 +3276,7 @@
       const days=eaGetDays(data);const projs=[...new Set(data.map(r=>r.project))];
       const totalH=data.reduce((s,r)=>s+r.hours,0);
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">프로젝트별 현황</span><span class="s-unit">'+projs.length+'개 과업</span></div>';
-      h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:30%">과업명</th><th style="width:42px">구분</th><th class="l" style="width:18%">투입인원</th>';
+      h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th style="width:30%">과업명</th><th style="width:42px">구분</th><th class="l" style="width:18%">투입인원</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:100px">비중</th></tr></thead><tbody>';
       const pData=projs.map(p=>{const pr=data.filter(r=>r.project===p);const ws=[...new Set(pr.map(r=>r.worker))];const tot=pr.reduce((s,r)=>s+r.hours,0);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}});return{name:p,gubun:pr[0]?.gubun||'',workers:ws,tot,pDay};}).sort((a,b)=>b.tot-a.tot);
