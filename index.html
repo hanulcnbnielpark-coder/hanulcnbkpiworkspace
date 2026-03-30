@@ -2108,7 +2108,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.4.3';
+    const APP_VER = 'v3.4.4';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3295,17 +3295,22 @@
       const wks=[...new Set(projData.map(r=>r.worker))].sort();
       const totalH=projData.reduce((s,r)=>s+r.hours,0);
       const totalOT=projData.reduce((s,r)=>s+r.ot,0);
+      const totalReg=projData.reduce((s,r)=>s+r.regular,0);
       const gubun=projData[0]?.gubun||'-';
+      const grandH=totalH+totalOT;
 
-      let h='<div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">';
-      h+='<button onclick="eaDrillBack()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--text-sub);font-weight:600;font-family:var(--font)">← 목록</button>';
-      h+='<div><div style="font-size:16px;font-weight:700">'+proj+'</div><span style="font-size:12px;color:var(--text-light)">'+gubun+' · '+wks.length+'명 · '+Math.round(totalH+totalOT)+'h</span></div></div>';
+      let h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">';
+      h+='<button onclick="eaDrillBack()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:13px;color:var(--text-sub);font-weight:500;font-family:var(--font)">← 목록</button>';
+      h+='<div><span style="font-size:15px;font-weight:700">'+proj+'</span> <span class="ea-tag '+gubun+'" style="margin-left:4px">'+gubun+'</span>';
+      h+='<div style="font-size:12px;color:var(--text-light);margin-top:2px">'+wks.length+'명 투입 · 근무 '+Math.round(totalReg)+'h · 연장 '+Math.round(totalOT)+'h</div></div></div>';
 
-      // KPI cards
-      h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px">';
-      h+='<div style="background:#F0F4FF;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#2F80ED;margin-bottom:2px">총 투입시간</div><div style="font-size:22px;font-weight:800;color:#2F80ED">'+Math.round(totalH+totalOT)+'<span style="font-size:12px">h</span></div></div>';
-      h+='<div style="background:var(--bg-muted);border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--text-sub);margin-bottom:2px">투입인원</div><div style="font-size:22px;font-weight:800;color:var(--text)">'+wks.length+'<span style="font-size:12px">명</span></div></div>';
-      if(totalOT>0)h+='<div style="background:#FFF5F5;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#EB5757;margin-bottom:2px">연장근무</div><div style="font-size:22px;font-weight:800;color:#EB5757">'+Math.round(totalOT)+'<span style="font-size:12px">h</span></div></div>';
+      // KPI row - same style as main
+      h+='<div class="ea-kpi-row" style="margin-bottom:16px">';
+      h+='<div class="ea-kpi"><div class="ea-kpi-label">총 투입시간</div><div class="ea-kpi-num">'+Math.round(grandH)+'<span class="u">h</span></div></div>';
+      h+='<div class="ea-kpi"><div class="ea-kpi-label">투입인원</div><div class="ea-kpi-num">'+wks.length+'<span class="u">명</span></div></div>';
+      h+='<div class="ea-kpi"><div class="ea-kpi-label">연장근무</div><div class="ea-kpi-num"'+(totalOT>0?' style="color:#EB5757"':'')+'>'+Math.round(totalOT)+'<span class="u">h</span></div></div>';
+      const days=projData.map(r=>r.date).filter((v,i,a)=>a.indexOf(v)===i).length;
+      h+='<div class="ea-kpi"><div class="ea-kpi-label">작업일수</div><div class="ea-kpi-num">'+days+'<span class="u">일</span></div></div>';
       h+='</div>';
 
       // 업무유형별
@@ -3318,30 +3323,29 @@
       const catColors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00'];
       if(catSorted.length){
         h+='<div style="margin-bottom:16px"><div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">업무유형별 투입</span></div>';
-        h+='<table class="ea-tbl"><thead><tr><th class="l">유형</th>';
-        wks.forEach(w=>{h+='<th>'+w+'</th>';});
-        h+='<th>합계</th><th>비율</th></tr></thead><tbody>';
+        h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:100px">유형</th>';
+        wks.forEach(w=>{h+='<th style="width:70px">'+w+'</th>';});
+        h+='<th style="width:70px">합계</th><th style="width:80px">비중</th></tr></thead><tbody>';
         catSorted.forEach(([c,cd],i)=>{
-          const pct=totalH>0?Math.round(cd.t/totalH*1000)/10:0;const col=catColors[i%catColors.length];
+          const pct=grandH>0?Math.round(cd.t/grandH*1000)/10:0;const col=catColors[i%catColors.length];
           h+='<tr><td class="l" style="font-weight:600"><span class="ea-type-dot" style="background:'+col+'"></span>'+c+'</td>';
           wks.forEach(w=>{const v=cd.w[w]||0;h+=v?'<td>'+v+'</td>':'<td class="z">-</td>';});
-          h+='<td class="tot">'+Math.round(cd.t*10)/10+'h</td><td style="font-weight:600;color:'+col+'">'+pct+'%</td></tr>';
+          h+='<td class="tot">'+Math.round(cd.t*10)/10+'</td><td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
         });
         h+='</tbody></table></div>';
       }
 
       // 인원별 상세
       h+='<div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">인원별 투입 상세</span></div>';
-      h+='<table class="ea-tbl"><thead><tr><th class="l">이름</th><th>정규</th><th>연장</th><th>합계</th><th>일평균</th><th>비율</th></tr></thead><tbody>';
+      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:80px">이름</th><th style="width:70px">정규</th><th style="width:70px">연장</th><th style="width:70px">합계</th><th style="width:80px">일평균</th><th style="width:80px">비중</th></tr></thead><tbody>';
       const perW={};projData.forEach(r=>{if(!perW[r.worker])perW[r.worker]={h:0,ot:0,days:new Set()};perW[r.worker].h+=r.hours;perW[r.worker].ot+=r.ot;perW[r.worker].days.add(r.date);});
-      const grandH=totalH+totalOT;
       Object.entries(perW).sort((a,b)=>(b[1].h+b[1].ot)-(a[1].h+a[1].ot)).forEach(([w,d])=>{
         const tot=d.h+d.ot;const pct=grandH>0?Math.round(tot/grandH*1000)/10:0;
         const dayAvg=d.days.size>0?Math.round(tot/d.days.size*10)/10:0;
         h+='<tr><td class="l" style="font-weight:600">'+w+'</td><td>'+Math.round(d.h)+'h</td>';
         h+='<td style="color:'+(d.ot>0?'#EB5757':'var(--text-faint)')+'">'+(d.ot>0?d.ot+'h':'-')+'</td>';
         h+='<td class="tot">'+Math.round(tot)+'h</td><td>'+dayAvg+'h/일</td>';
-        h+='<td style="font-weight:600">'+pct+'%</td></tr>';
+        h+='<td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:#2F80ED"></div></div><div class="ea-pct-val" style="color:#2F80ED">'+pct+'%</div></div></td></tr>';
       });
       h+='</tbody></table>';
       document.getElementById('eaContent').innerHTML=h;
