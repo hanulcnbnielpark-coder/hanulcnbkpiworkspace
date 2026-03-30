@@ -1530,8 +1530,9 @@
     .ea-pill.on{background:var(--bg-muted);color:var(--text);font-weight:600}
     .ea-sel{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;font-size:13px;color:var(--text);background:var(--bg-white);cursor:pointer;outline:none}
     .ea-nav{width:26px;height:26px;border-radius:4px;border:1px solid var(--border);background:var(--bg-white);cursor:pointer;font-size:14px;color:var(--text-light);display:flex;align-items:center;justify-content:center}
-    .ea-kpi-row{display:flex;gap:1px;margin-bottom:20px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-    .ea-kpi{flex:1;background:var(--bg-white);padding:14px 18px}
+    .ea-kpi-row{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .ea-kpi{flex:1;background:var(--bg-white);padding:14px 18px;border-right:1px solid var(--border)}
+    .ea-kpi:last-child{border-right:none}
     .ea-kpi-label{font-size:12px;color:var(--text-light);margin-bottom:4px}
     .ea-kpi-num{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-1px}
     .ea-kpi-num .u{font-size:14px;font-weight:400;color:var(--text-light);margin-left:1px}
@@ -1558,9 +1559,10 @@
     .ea-tbl tbody tr.sub td.lbl{font-weight:600;color:var(--text-light);font-size:12px;letter-spacing:.5px}
     .ea-tbl tbody tr.sub td.ot-s{color:#EB5757;font-weight:600;font-size:12px}
     .ea-tbl tbody tr.gap td{padding:0;height:6px;background:var(--bg-white);border:none}
-    .ea-tbl tbody tr.gt td{background:var(--text);color:#fff;font-weight:700;font-size:14px;padding:10px;border:none}
+    .ea-tbl tbody tr.gt td{background:var(--text);color:#fff;font-weight:700;font-size:13px;padding:8px 10px;border:none}
     .ea-tbl tbody tr.gt td .dim{font-size:11px;color:rgba(255,255,255,.5);margin-left:6px}
     .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):hover td{background:var(--bg-hover)}
+    .ea-tbl tbody td.ot-cell .ot-num{font-size:12px;color:#EB5757;font-weight:600;margin-left:1px}
     .ea-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
     .ea-tag.철도{background:#D3E5EF;color:#2F80ED}.ea-tag.도로{background:#DBEDDB;color:#0F7B0F}.ea-tag.공통{background:#F1F1EF;color:#787774}.ea-tag.단지{background:#FADEC9;color:#D9730D}.ea-tag.휴가{background:#F1F1EF;color:#9B9A97}
     .ea-type-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
@@ -1637,7 +1639,7 @@
 
         <div class="nav-item" data-view="workforce" onclick="goView('workforce')">
           <span class="icon"><i class="ri-bar-chart-grouped-line"></i></span>
-          <span class="label">인력분석</span>
+          <span class="label">타임시트</span>
         </div>
 
         <div class="nav-item" data-view="timesheet" onclick="goView('timesheet')">
@@ -2106,7 +2108,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.4.0';
+    const APP_VER = 'v3.4.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2513,7 +2515,7 @@
       kpiscore:{title:'실적 입력',sub:'rate/count 타입 KPI 실적을 직접 입력하고 스코어카드에 자동 반영합니다.',icon:'ri-edit-box-line'},
       scorecard:{title:'KPI 스코어카드',sub:'5개 KPI 항목별 가중치 기반 종합 등급을 산정합니다.',icon:'ri-medal-line'},
       timesheet:{title:'타임시트 분석',sub:'소프트웨어별 업무 수행시간과 KPI 카테고리별 달성률을 분석합니다.',icon:'ri-pie-chart-line'},
-      workforce:{title:'인력분석',sub:'주간·월간 인력 투입 현황을 인원별·프로젝트별·유형별로 분석합니다.',icon:'ri-bar-chart-grouped-line'},
+      workforce:{title:'타임시트',sub:'주간·월간 인력 투입 현황을 인원별·프로젝트별·유형별로 분석합니다.',icon:'ri-bar-chart-grouped-line'},
       evaluation:{title:'평가 리포트',sub:'상·하반기 인사평가용 KPI 종합 리포트를 생성합니다.',icon:'ri-file-chart-line'},
       projmgr:{title:'프로젝트 관리',sub:'프로젝트 등록·수정·삭제와 상태를 관리합니다.',icon:'ri-building-line'},
       settings:{title:'기본정보관리',sub:'Google Sheets 연결, 인원 및 계정 정보를 관리합니다.',icon:'ri-settings-3-line'},
@@ -3092,7 +3094,7 @@
     // ════════════════════════════════════════
     // 인력분석 모듈 (Workforce Analysis)
     // ════════════════════════════════════════
-    let EA=[],EA_ALL_CATS=[],EA_MODE='week',EA_TAB='person',EA_WK='',EA_MON='',EA_TEAM='';
+    let EA=[],EA_ALL_CATS=[],EA_MODE='week',EA_TAB='person',EA_WK='',EA_MON='',EA_TEAM='',EA_YEAR='';
 
     async function eaFetchData(){
       const sid=TIMESHEET_SHEET_ID;if(!sid)return;
@@ -3120,8 +3122,9 @@
         for(let i=1;i<rows.length;i++){const v=rows[i];if(!v[iD])continue;
           const rg=parseFloat(v[iR])||0,ot=parseFloat(v[iO])||0;
           const cats={};catCols.forEach(cc=>{const di=cc.diCol>=0?(v[cc.diCol]||''):'';const dh=cc.dhCol>=0?parseFloat(v[cc.dhCol])||0:0;const ni=cc.niCol>=0?(v[cc.niCol]||''):'';const nh=cc.nhCol>=0?parseFloat(v[cc.nhCol])||0:0;if(di||dh>0||ni||nh>0)cats[cc.name]={di,dh,ni,nh};});
-          EA.push({date:eaPD(v[iD]),worker:v[iW],team:(v[iT]||''),gubun:v[iG]||'',project:v[iP],regular:rg,ot:ot,hours:parseFloat(v[iH])||(rg+ot),cats,note:iNote>=0?(v[iNote]||''):'',status:iST>=0?(v[iST]||''):''});}
-        if(EA.length){toast('인력분석 '+EA.length+'건 로드','success');return;}
+          const rawTm=(v[iT]||'').trim();const cleanTm=(rawTm.length>15||rawTm.includes(',')||/\d{2,}/.test(rawTm)||rawTm.includes('Excel'))?'':rawTm;
+          EA.push({date:eaPD(v[iD]),worker:v[iW],team:cleanTm,gubun:v[iG]||'',project:v[iP],regular:rg,ot:ot,hours:parseFloat(v[iH])||(rg+ot),cats,note:iNote>=0?(v[iNote]||''):'',status:iST>=0?(v[iST]||''):''});}
+        if(EA.length){toast('타임시트 '+EA.length+'건 로드','success');return;}
       }catch(e){console.warn('EA fetch error:',e);}}
     }
 
@@ -3133,6 +3136,7 @@
 
     function eaFiltered(){
       let d=EA;if(EA_TEAM)d=d.filter(r=>r.team===EA_TEAM);
+      if(EA_YEAR)d=d.filter(r=>r.date.substring(0,4)===EA_YEAR);
       if(EA_MODE==='week'&&EA_WK){const days=eaWD(EA_WK).map(x=>x.toISOString().substring(0,10));d=d.filter(r=>days.includes(r.date));}
       else if(EA_MODE==='month'&&EA_MON){d=d.filter(r=>r.date.substring(0,7)===EA_MON);}
       return d;
@@ -3146,34 +3150,38 @@
     function eaBuildUI(){
       if(!EA.length){document.getElementById('eaContent').innerHTML='<div class="ea-empty"><i class="ri-bar-chart-grouped-line"></i><p>타임시트DB 데이터를 불러올 수 없습니다</p><p style="font-size:12px">기본정보관리 → GAS URL 및 타임시트 시트ID를 확인하세요</p></div>';return;}
       // Auto-detect current week
-      if(!EA_WK){const wks=[...new Set(EA.map(r=>eaWK(r.date)))].sort();EA_WK=wks[wks.length-1]||'';}
-      if(!EA_MON){const mons=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();EA_MON=mons[mons.length-1]||'';}
+      if(!EA_YEAR){const yrs=[...new Set(EA.map(r=>r.date.substring(0,4)))].sort();EA_YEAR=yrs[yrs.length-1]||'';}
+      if(!EA_WK){const wks=[...new Set(EA.filter(r=>r.date.substring(0,4)===EA_YEAR).map(r=>eaWK(r.date)))].sort();EA_WK=wks[wks.length-1]||'';}
+      if(!EA_MON){const mons=[...new Set(EA.filter(r=>r.date.substring(0,4)===EA_YEAR).map(r=>r.date.substring(0,7)))].sort();EA_MON=mons[mons.length-1]||'';}
       eaRenderSelector();eaRenderKPI();eaRenderTabs();eaRenderContent();
     }
 
     function eaRenderSelector(){
-      const weeks=[...new Set(EA.map(r=>eaWK(r.date)))].sort();
-      const months=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();
-      const teams=[...new Set(EA.map(r=>r.team).filter(Boolean))].sort();
+      const years=[...new Set(EA.map(r=>r.date.substring(0,4)))].sort();
+      const yd=EA.filter(r=>r.date.substring(0,4)===EA_YEAR);
+      const weeks=[...new Set(yd.map(r=>eaWK(r.date)))].sort();
+      const months=[...new Set(yd.map(r=>r.date.substring(0,7)))].sort();
+      const teams=[...new Set(EA.map(r=>r.team).filter(t=>t&&t.length>1&&t.length<15&&!t.includes(',')&&!t.includes('Excel')))].sort();
       let h='<div class="ea-pill-group"><button class="ea-pill'+(EA_MODE==='week'?' on':'')+'" onclick="EA_MODE=\'week\';eaBuildUI()">주간</button><button class="ea-pill'+(EA_MODE==='month'?' on':'')+'" onclick="EA_MODE=\'month\';eaBuildUI()">월간</button></div>';
+      h+='<select class="ea-sel" style="width:80px;" onchange="EA_YEAR=this.value;EA_WK=\'\';EA_MON=\'\';eaBuildUI()">';
+      years.forEach(y=>{h+='<option value="'+y+'"'+(y===EA_YEAR?' selected':'')+'>'+y+'</option>';});h+='</select>';
       if(EA_MODE==='week'){
-        const wi=weeks.indexOf(EA_WK);
         h+='<button class="ea-nav" onclick="eaNavWk(-1)">◁</button>';
-        h+='<select class="ea-sel" onchange="EA_WK=this.value;eaBuildUI()">';
+        h+='<select class="ea-sel" style="width:200px;" onchange="EA_WK=this.value;eaBuildUI()">';
         weeks.forEach(w=>{const ds=eaWD(w);const lbl=ds.length?eaFD(ds[0])+'~'+eaFD(ds[4]):'';h+='<option value="'+w+'"'+(w===EA_WK?' selected':'')+'>'+w+' ('+lbl+')</option>';});
         h+='</select><button class="ea-nav" onclick="eaNavWk(1)">▷</button>';
       } else {
         h+='<button class="ea-nav" onclick="eaNavMon(-1)">◁</button>';
-        h+='<select class="ea-sel" onchange="EA_MON=this.value;eaBuildUI()">';months.forEach(m=>{h+='<option value="'+m+'"'+(m===EA_MON?' selected':'')+'>'+m+'</option>';});
+        h+='<select class="ea-sel" style="width:110px;" onchange="EA_MON=this.value;eaBuildUI()">';months.forEach(m=>{h+='<option value="'+m+'"'+(m===EA_MON?' selected':'')+'>'+m+'</option>';});
         h+='</select><button class="ea-nav" onclick="eaNavMon(1)">▷</button>';
       }
-      h+='<select class="ea-sel" onchange="EA_TEAM=this.value;eaBuildUI()"><option value="">전체 팀</option>';
+      h+='<select class="ea-sel" style="width:120px;" onchange="EA_TEAM=this.value;eaBuildUI()"><option value="">전체 팀</option>';
       teams.forEach(t=>{h+='<option value="'+t+'"'+(t===EA_TEAM?' selected':'')+'>'+t+'</option>';});h+='</select>';
       document.getElementById('eaSelector').innerHTML=h;
     }
 
-    function eaNavWk(d){const ws=[...new Set(EA.map(r=>eaWK(r.date)))].sort();const i=ws.indexOf(EA_WK);const ni=Math.max(0,Math.min(ws.length-1,i+d));EA_WK=ws[ni];eaBuildUI();}
-    function eaNavMon(d){const ms=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();const i=ms.indexOf(EA_MON);const ni=Math.max(0,Math.min(ms.length-1,i+d));EA_MON=ms[ni];eaBuildUI();}
+    function eaNavWk(d){const yd=EA.filter(r=>r.date.substring(0,4)===EA_YEAR);const ws=[...new Set(yd.map(r=>eaWK(r.date)))].sort();const i=ws.indexOf(EA_WK);const ni=Math.max(0,Math.min(ws.length-1,i+d));EA_WK=ws[ni];eaBuildUI();}
+    function eaNavMon(d){const yd=EA.filter(r=>r.date.substring(0,4)===EA_YEAR);const ms=[...new Set(yd.map(r=>r.date.substring(0,7)))].sort();const i=ms.indexOf(EA_MON);const ni=Math.max(0,Math.min(ms.length-1,i+d));EA_MON=ms[ni];eaBuildUI();}
 
     function eaRenderKPI(){
       const data=eaFiltered();const totalH=data.reduce((s,r)=>s+r.hours,0);
@@ -3246,7 +3254,7 @@
       });
       h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
       days.forEach(d=>{h+='<td>'+Math.round(gDayTot[d.date]*10)/10+'</td>';});
-      h+='<td>'+Math.round((gReg+gOT))+'h<span class="dim">근무'+Math.round(gReg)+'·연장'+Math.round(gOT)+'</span></td><td></td></tr>';
+      h+='<td>'+Math.round(gReg+gOT)+'h</td><td style="font-size:11px;opacity:.6">근무'+Math.round(gReg)+'·연장'+Math.round(gOT)+'</td></tr>';
       h+='</tbody></table>';document.getElementById('eaContent').innerHTML=h;
     }
 
