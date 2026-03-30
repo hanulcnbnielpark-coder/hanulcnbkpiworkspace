@@ -2112,7 +2112,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.9';
+    const APP_VER = 'v3.6.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3458,11 +3458,11 @@
       const md=document.createElement('div');md.id='eaUncModal';
       md.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px)';
       md.onclick=function(e){if(e.target===md)md.remove();};
-      let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
-      mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+recs.length+'건 · '+Math.round(recs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
-      mh+='<div style="overflow-y:auto;flex:1;padding:0"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#fafafa"><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">날짜</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">작업자</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">과업명</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">구분</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">시간</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">비고</th></tr></thead><tbody>';
+      let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;max-width:900px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
+      mh+='<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+recs.length+'건 · '+Math.round(recs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-light);padding:4px 8px">✕</button></div>';
+      mh+='<div style="overflow:auto;flex:1"><table class="ea-tbl"><thead><tr><th style="width:90px">날짜</th><th style="width:60px">작업자</th><th class="l">과업명</th><th style="width:50px">구분</th><th style="width:50px">시간</th><th class="l" style="min-width:160px">비고</th></tr></thead><tbody>';
       recs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
-        mh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px">'+u.date+'</td><td style="padding:8px 12px;font-weight:600">'+u.worker+'</td><td style="padding:8px 12px">'+u.project+'</td><td style="padding:8px 12px;text-align:center"><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="padding:8px 12px;text-align:center;color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td style="padding:8px 12px;font-size:12px;color:#666">'+(u.note||'-')+'</td></tr>';
+        mh+='<tr><td>'+u.date+'</td><td style="font-weight:600">'+u.worker+'</td><td class="pj" title="'+(u.project||'').replace(/"/g,'&quot;')+'">'+u.project+'</td><td><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td class="l" style="font-size:12px;color:var(--text-sub)">'+((u.note||'-').length>40?(u.note||'-').substring(0,40)+'…':(u.note||'-'))+'</td></tr>';
       });
       mh+='</tbody></table></div></div>';
       md.innerHTML=mh;document.body.appendChild(md);
