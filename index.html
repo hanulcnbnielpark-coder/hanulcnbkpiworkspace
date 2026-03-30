@@ -1553,7 +1553,7 @@
     .ea-tbl tbody td:last-child{border-right:none}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
-    .ea-tbl tbody td.pj{text-align:left;white-space:nowrap}
+    .ea-tbl tbody td.pj{text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ea-tbl tbody td.z{color:var(--text-faint)}
     .ea-tbl tbody td.tot{font-weight:700;color:#2F80ED;background:#F7F9FC}
     .ea-tbl tbody td.ot-cell{position:relative;background:#FFF5F5}
@@ -2112,7 +2112,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.8';
+    const APP_VER = 'v3.5.9';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3241,9 +3241,14 @@
     function eaRenderPerson(data){
       const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
       const nDays=days.length;
-      let h='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th style="width:66px">작업자</th><th class="l">과업명</th><th style="width:44px">구분</th>';
-      days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
-      h+='<th style="width:56px">합계</th><th style="width:100px">비고</th></tr></thead><tbody>';
+      let h='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl" style="width:100%;table-layout:fixed">';
+      h+='<colgroup><col style="width:66px"><col>';
+      h+='<col style="width:44px">';
+      for(let i=0;i<nDays;i++)h+='<col style="width:52px">';
+      h+='<col style="width:52px"><col style="width:80px"></colgroup>';
+      h+='<thead><tr><th>작업자</th><th class="l">과업명</th><th>구분</th>';
+      days.forEach(d=>{h+='<th>'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
+      h+='<th>합계</th><th>비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
       workers.forEach((w,wi)=>{
         const wr=data.filter(r=>r.worker===w);const projs=[...new Set(wr.map(r=>r.project))];
@@ -3252,8 +3257,7 @@
           const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
           let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
           h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
-          const pName=p.length>25?p.substring(0,25)+'…':p;
-          h+='<td class="pj" title="'+p.replace(/"/g,'&quot;')+'">'+pName+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          h+='<td class="pj" title="'+p.replace(/"/g,'&quot;')+'">'+p+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
           days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
           h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
         });
@@ -3442,7 +3446,7 @@
     }
     function eaShowUncModal(){
       let m=document.getElementById('eaUncModal');if(m)m.remove();
-      const data=eaFilt();
+      const data=eaFiltered();
       const recs=[];
       data.forEach(r=>{
         if(r.gubun==='휴가'||r.project==='휴가'||r.project==='공통'||r.project==='공가')return;
