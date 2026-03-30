@@ -2108,7 +2108,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.4.4';
+    const APP_VER = 'v3.4.5';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3323,7 +3323,7 @@
       const catColors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00'];
       if(catSorted.length){
         h+='<div style="margin-bottom:16px"><div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">업무유형별 투입</span></div>';
-        h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:100px">유형</th>';
+        h+='<table class="ea-tbl"><thead><tr><th class="l" style="width:70px">유형</th>';
         wks.forEach(w=>{h+='<th style="width:70px">'+w+'</th>';});
         h+='<th style="width:70px">합계</th><th style="width:80px">비중</th></tr></thead><tbody>';
         catSorted.forEach(([c,cd],i)=>{
@@ -3337,7 +3337,7 @@
 
       // 인원별 상세
       h+='<div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">인원별 투입 상세</span></div>';
-      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:80px">이름</th><th style="width:70px">정규</th><th style="width:70px">연장</th><th style="width:70px">합계</th><th style="width:80px">일평균</th><th style="width:80px">비중</th></tr></thead><tbody>';
+      h+='<table class="ea-tbl"><thead><tr><th class="l" style="width:60px">이름</th><th style="width:70px">정규</th><th style="width:70px">연장</th><th style="width:70px">합계</th><th style="width:80px">일평균</th><th style="width:80px">비중</th></tr></thead><tbody>';
       const perW={};projData.forEach(r=>{if(!perW[r.worker])perW[r.worker]={h:0,ot:0,days:new Set()};perW[r.worker].h+=r.hours;perW[r.worker].ot+=r.ot;perW[r.worker].days.add(r.date);});
       Object.entries(perW).sort((a,b)=>(b[1].h+b[1].ot)-(a[1].h+a[1].ot)).forEach(([w,d])=>{
         const tot=d.h+d.ot;const pct=grandH>0?Math.round(tot/grandH*1000)/10:0;
@@ -3361,7 +3361,7 @@
       const types=Object.entries(typMap).sort((a,b)=>b[1].tot-a[1].tot);
       const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00','#AEB5BC'];
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit">'+types.length+'개 유형</span></div>';
-      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:120px">업무유형</th><th class="l" style="width:100px">투입인원</th>';
+      h+='<table class="ea-tbl"><thead><tr><th class="l" style="width:80px">업무유형</th><th class="l" style="min-width:160px">투입인원</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:56px">야간</th><th style="width:100px">비중</th></tr></thead><tbody>';
       types.forEach(([cat,v],i)=>{
