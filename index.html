@@ -1553,8 +1553,7 @@
     .ea-tbl tbody td:last-child{border-right:none}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
-    .ea-tbl tbody td.pj{text-align:left;padding:7px 10px}
-    .pj-text{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ea-tbl tbody td.pj{text-align:left;white-space:nowrap}
     .ea-tbl tbody td.z{color:var(--text-faint)}
     .ea-tbl tbody td.tot{font-weight:700;color:#2F80ED;background:#F7F9FC}
     .ea-tbl tbody td.ot-cell{position:relative;background:#FFF5F5}
@@ -2113,7 +2112,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.7';
+    const APP_VER = 'v3.5.8';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3253,7 +3252,8 @@
           const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
           let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
           h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
-          h+='<td class="pj"><div class="pj-text" title="'+p.replace(/"/g,'&quot;')+'">'+p+'</div></td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          const pName=p.length>25?p.substring(0,25)+'…':p;
+          h+='<td class="pj" title="'+p.replace(/"/g,'&quot;')+'">'+pName+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
           days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
           h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
         });
@@ -3381,18 +3381,6 @@
       const psorted=Object.entries(pm).sort((a,b)=>b[1].t-a[1].t);
       const pcolors=['#2F80ED','#9B51E0','#219653','#D9730D','#06B6D4','#EC4899','#F59F00','#787774','#EB5757','#AEB5BC'];
 
-      // Collect unclassified records for modal — records without di/ni (program level)
-      const uncRecs=[];
-      data.forEach(r=>{
-        const isVac=r.gubun==='휴가'||r.project==='휴가';
-        const isComm=r.project==='공통'||r.project==='공가';
-        if(isVac||isComm)return;
-        const entries=Object.entries(r.cats);
-        let diH=0;entries.forEach(([cat,cv])=>{if(cv.di&&cv.dh>0)diH+=cv.dh;if(cv.ni&&cv.nh>0)diH+=cv.nh;});
-        const rem=r.hours-diH;
-        if(rem>0.1)uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});
-      });
-
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle" style="background:#2F80ED"></div><span class="title">프로그램 사용현황</span><span class="s-unit" style="color:#EB5757">'+psorted.length+'종</span></div>';
       h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">프로그램</th>';
       workers.forEach(w=>{h+='<th style="min-width:56px">'+w+'</th>';});
@@ -3400,7 +3388,7 @@
       psorted.forEach(([pg,pd],i)=>{
         const pct=ptot>0?Math.round(pd.t/ptot*1000)/10:0;const col=pcolors[i%pcolors.length];
         const isUnc=pg==='미분류';
-        h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+pg+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
+        h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()"':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+pg+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
         workers.forEach(w=>{const v=pd.w[w]||0;h+=v?'<td>'+Math.round(v*10)/10+'</td>':'<td class="z">-</td>';});
         h+='<td class="tot">'+Math.round(pd.t*10)/10+'</td>';
         h+='<td'+(pd.tn>0?' style="color:#EB5757;font-weight:600"':' class="z"')+'>'+(pd.tn>0?pd.tn+'h':'-')+'</td>';
@@ -3437,7 +3425,7 @@
       catSorted.forEach((cat,i)=>{
         const col=colors[i%colors.length];
         const isUnc=(cat.name==='기타'||cat.name==='미분류');
-        h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+cat.name+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
+        h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()"':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+cat.name+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
         workers.forEach(w=>{const v=cat.wm[w]||0;h+=v?'<td>'+Math.round(v*10)/10+'</td>':'<td class="z">-</td>';});
         const pct=totalH>0?Math.round(cat.tot/totalH*1000)/10:0;
         h+='<td class="tot">'+Math.round(cat.tot*10)/10+'</td>';
@@ -3449,30 +3437,32 @@
       h+='<td>'+Math.round(totalH)+'h</td><td></td></tr>';
       h+='</tbody></table></div>';
 
-      // 미분류 모달 — body에 직접 추가
       document.getElementById('eaContent').innerHTML=h;
       let oldM=document.getElementById('eaUncModal');if(oldM)oldM.remove();
-      const hasUnc=uncRecs.length>0||pm['미분류']||catW['기타'];
-      if(hasUnc){
-        const modalRecs=uncRecs.length>0?uncRecs:data.filter(r=>{
-          if(r.gubun==='휴가'||r.project==='휴가'||r.project==='공통'||r.project==='공가')return false;
-          const diH=Object.entries(r.cats).reduce((s,[c,cv])=>s+((cv.di&&cv.dh>0)?cv.dh:0)+((cv.ni&&cv.nh>0)?cv.nh:0),0);
-          return r.hours-diH>0.1;
-        }).map(r=>({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:r.hours-Object.entries(r.cats).reduce((s,[c,cv])=>s+((cv.di&&cv.dh>0)?cv.dh:0)+((cv.ni&&cv.nh>0)?cv.nh:0),0),note:r.note||r.status||''}));
-        const md=document.createElement('div');md.id='eaUncModal';
-        md.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px)';
-        md.onclick=function(e){if(e.target===md)md.style.display='none';};
-        let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
-        mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+modalRecs.length+'건 · '+Math.round(modalRecs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
-        mh+='<div style="overflow-y:auto;flex:1;padding:0"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#fafafa"><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">날짜</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">작업자</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">과업명</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">구분</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">시간</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">비고/진행사항</th></tr></thead><tbody>';
-        modalRecs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
-          mh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px">'+u.date+'</td><td style="padding:8px 12px;font-weight:600">'+u.worker+'</td><td style="padding:8px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+u.project+'</td><td style="padding:8px 12px;text-align:center"><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="padding:8px 12px;text-align:center;color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td style="padding:8px 12px;font-size:12px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(u.note||'-')+'">'+(u.note||'-')+'</td></tr>';
-        });
-        mh+='</tbody></table></div></div>';
-        md.innerHTML=mh;document.body.appendChild(md);
-      }
     }
-    function eaShowUncModal(){const m=document.getElementById('eaUncModal');if(m)m.style.display='block';}
+    function eaShowUncModal(){
+      let m=document.getElementById('eaUncModal');if(m)m.remove();
+      const data=eaFilt();
+      const recs=[];
+      data.forEach(r=>{
+        if(r.gubun==='휴가'||r.project==='휴가'||r.project==='공통'||r.project==='공가')return;
+        const diH=Object.entries(r.cats||{}).reduce((s,[c,cv])=>s+((cv.di&&cv.dh>0)?cv.dh:0)+((cv.ni&&cv.nh>0)?cv.nh:0),0);
+        const rem=r.hours-diH;
+        if(rem>0.1)recs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});
+      });
+      if(!recs.length){showToast('미분류 데이터가 없습니다');return;}
+      const md=document.createElement('div');md.id='eaUncModal';
+      md.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px)';
+      md.onclick=function(e){if(e.target===md)md.remove();};
+      let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
+      mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+recs.length+'건 · '+Math.round(recs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
+      mh+='<div style="overflow-y:auto;flex:1;padding:0"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#fafafa"><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">날짜</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">작업자</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">과업명</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">구분</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">시간</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">비고</th></tr></thead><tbody>';
+      recs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
+        mh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px">'+u.date+'</td><td style="padding:8px 12px;font-weight:600">'+u.worker+'</td><td style="padding:8px 12px">'+u.project+'</td><td style="padding:8px 12px;text-align:center"><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="padding:8px 12px;text-align:center;color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td style="padding:8px 12px;font-size:12px;color:#666">'+(u.note||'-')+'</td></tr>';
+      });
+      mh+='</tbody></table></div></div>';
+      md.innerHTML=mh;document.body.appendChild(md);
+    }
 
     // NEW: 타임시트 분석
     // ════════════════════════════════════════
