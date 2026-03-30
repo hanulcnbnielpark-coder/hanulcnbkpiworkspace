@@ -1542,11 +1542,13 @@
     .ea-tab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;font-family:var(--font);color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-1px}
     .ea-tab:hover{color:var(--text)}
     .ea-tab.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
-    .ea-tbl{width:100%;border-collapse:collapse}
-    .ea-tbl thead th{padding:6px 10px;font-size:12px;font-weight:500;color:var(--text-light);text-align:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-white);z-index:1}
+    .ea-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
+    .ea-tbl thead th{position:sticky;top:0;z-index:5;background:var(--bg-muted);color:var(--text-sub);padding:11px 12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border-light);white-space:nowrap}
+    .ea-tbl thead th:last-child{border-right:none}
     .ea-tbl thead th.l{text-align:left}
-    .ea-tbl thead th .sub{display:block;font-size:10px;color:var(--text-faint);font-weight:400}
-    .ea-tbl tbody td{padding:7px 10px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);font-variant-numeric:tabular-nums}
+    .ea-tbl thead th .sub{display:block;font-size:11px;color:var(--text-faint);font-weight:400}
+    .ea-tbl tbody td{padding:9px 12px;text-align:center;font-size:14px;border-bottom:1px solid var(--border-light);color:var(--text);font-variant-numeric:tabular-nums;border-right:1px solid var(--border-light)}
+    .ea-tbl tbody td:last-child{border-right:none}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
     .ea-tbl tbody td.pj{text-align:left;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1562,7 +1564,6 @@
     .ea-tbl tbody tr.gt td{background:var(--text);color:#fff;font-weight:700;font-size:13px;padding:8px 10px;border:none}
     .ea-tbl tbody tr.gt td .dim{font-size:11px;color:rgba(255,255,255,.5);margin-left:6px}
     .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):hover td{background:var(--bg-hover)}
-    .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):nth-child(even) td{background:var(--bg-muted)}
     .ea-tbl tbody td.ot-cell .ot-num{font-size:12px;color:#EB5757;font-weight:600;margin-left:1px}
     .ea-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
     .ea-tag.철도{background:#D3E5EF;color:#2F80ED}.ea-tag.도로{background:#DBEDDB;color:#0F7B0F}.ea-tag.공통{background:#F1F1EF;color:#787774}.ea-tag.단지{background:#FADEC9;color:#D9730D}.ea-tag.휴가{background:#F1F1EF;color:#9B9A97}
@@ -2109,7 +2110,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.0';
+    const APP_VER = 'v3.5.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3436,21 +3437,24 @@
       h+='<td>'+Math.round(totalH)+'h</td><td></td></tr>';
       h+='</tbody></table></div>';
 
-      // 미분류 모달
-      if(uncRecs.length){
-        h+='<div id="eaUncModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);" onclick="if(event.target===this)this.style.display=\'none\'">';
-        h+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
-        h+='<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+uncRecs.length+'건 · '+Math.round(uncRecs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-light)">✕</button></div>';
-        h+='<div style="overflow-y:auto;flex:1"><table class="ea-tbl"><thead><tr><th>날짜</th><th>작업자</th><th class="l" style="min-width:180px">과업명</th><th>구분</th><th>시간</th><th class="l" style="min-width:180px">비고/진행사항</th></tr></thead><tbody>';
-        uncRecs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
-          h+='<tr><td>'+u.date+'</td><td style="font-weight:600">'+u.worker+'</td><td class="pj">'+u.project+'</td><td><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td class="l" style="font-size:12px;color:var(--text-sub);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(u.note||'-')+'">'+(u.note||'-')+'</td></tr>';
-        });
-        h+='</tbody></table></div></div></div>';
-      }
-
+      // 미분류 모달 — body에 직접 추가
       document.getElementById('eaContent').innerHTML=h;
+      let oldM=document.getElementById('eaUncModal');if(oldM)oldM.remove();
+      if(uncRecs.length){
+        const md=document.createElement('div');md.id='eaUncModal';
+        md.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px)';
+        md.onclick=function(e){if(e.target===md)md.style.display='none';};
+        let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
+        mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+uncRecs.length+'건 · '+Math.round(uncRecs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
+        mh+='<div style="overflow-y:auto;flex:1;padding:0"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#fafafa"><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">날짜</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">작업자</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">과업명</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">구분</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">시간</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">비고/진행사항</th></tr></thead><tbody>';
+        uncRecs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
+          mh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px">'+u.date+'</td><td style="padding:8px 12px;font-weight:600">'+u.worker+'</td><td style="padding:8px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+u.project+'</td><td style="padding:8px 12px;text-align:center"><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="padding:8px 12px;text-align:center;color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td style="padding:8px 12px;font-size:12px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(u.note||'-')+'">'+(u.note||'-')+'</td></tr>';
+        });
+        mh+='</tbody></table></div></div>';
+        md.innerHTML=mh;document.body.appendChild(md);
+      }
     }
-    function eaShowUncModal(){const m=document.getElementById('eaUncModal');if(m)m.style.display='';}
+    function eaShowUncModal(){const m=document.getElementById('eaUncModal');if(m)m.style.display='block';}
 
     // NEW: 타임시트 분석
     // ════════════════════════════════════════
