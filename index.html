@@ -1551,7 +1551,7 @@
     .ea-tbl tbody td:last-child{border-right:none}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
-    .ea-tbl tbody td.pj{text-align:left;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ea-tbl tbody td.pj{text-align:left;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ea-tbl tbody td.z{color:var(--text-faint)}
     .ea-tbl tbody td.tot{font-weight:700;color:#2F80ED;background:#F7F9FC}
     .ea-tbl tbody td.ot-cell{position:relative;background:#FFF5F5}
@@ -2110,7 +2110,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.2';
+    const APP_VER = 'v3.5.3';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3233,7 +3233,7 @@
 
     function eaRenderPerson(data){
       const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
-      let h='<table class="ea-tbl"><thead><tr><th style="width:70px">작업자</th><th class="l" style="max-width:260px">과업명</th><th style="width:56px">구분</th>';
+      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="table-layout:fixed;width:100%"><thead><tr><th style="width:70px">작업자</th><th class="l" style="width:220px">과업명</th><th style="width:50px">구분</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:80px">비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
@@ -3244,7 +3244,7 @@
           const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
           let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
           h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
-          h+='<td class="pj" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          h+='<td class="pj">'+p+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
           days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
           h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
         });
@@ -3258,7 +3258,7 @@
       h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
       days.forEach(d=>{h+='<td>'+Math.round(gDayTot[d.date]*10)/10+'</td>';});
       h+='<td>'+Math.round(gReg+gOT)+'h</td><td style="font-size:11px;line-height:1.4;opacity:.7">근무 '+Math.round(gReg)+'h<br>연장 '+Math.round(gOT)+'h</td></tr>';
-      h+='</tbody></table>';document.getElementById('eaContent').innerHTML=h;
+      h+='</tbody></table></div>';document.getElementById('eaContent').innerHTML=h;
     }
 
     function eaRenderProject(data){
@@ -3275,7 +3275,7 @@
         const pct=totalH>0?Math.round(p.tot/totalH*1000)/10:0;const col=colors[i%colors.length];
         const isSpecial=p.name==='휴가'||p.name==='공통'||p.name==='공가';
         const click=isSpecial?'':'style="font-weight:600;color:#2F80ED;cursor:pointer" onclick="eaDrill(\''+p.name.replace(/'/g,"\\'")+'\')"';
-        h+='<tr><td class="pj" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '+(click||'style="font-weight:600"')+'>'+p.name+'</td><td><span class="ea-tag '+p.gubun+'">'+p.gubun+'</span></td>';
+        h+='<tr><td class="pj" '+(click||'style="font-weight:600"')+'>'+p.name+'</td><td><span class="ea-tag '+p.gubun+'">'+p.gubun+'</span></td>';
         h+='<td class="l" style="font-size:12px;color:var(--text-light)">'+(p.workers.length>3?p.workers.slice(0,2).join(', ')+' 외 '+(p.workers.length-2):p.workers.join(', '))+'</td>';
         days.forEach(d=>{const v=p.pDay[d.date];h+=v.ot>0?'<td class="ot-cell">'+(v.reg)+' <span class="ot-num">+'+v.ot+'</span></td>':(v.reg?'<td>'+v.reg+'</td>':'<td class="z">-</td>');});
         h+='<td class="tot">'+Math.round(p.tot*10)/10+'</td><td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
@@ -3440,14 +3440,17 @@
       // 미분류 모달 — body에 직접 추가
       document.getElementById('eaContent').innerHTML=h;
       let oldM=document.getElementById('eaUncModal');if(oldM)oldM.remove();
-      if(uncRecs.length){
+      const hasUnc=uncRecs.length>0||pm['미분류'];
+      if(hasUnc){
+        // If uncRecs empty but pm has 미분류, build from all data
+        const modalRecs=uncRecs.length>0?uncRecs:data.filter(r=>{const catH=Object.entries(r.cats).reduce((s,[c,cv])=>s+cv.dh+cv.nh,0);return r.hours-catH>0.1;}).map(r=>({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:r.hours-Object.entries(r.cats).reduce((s,[c,cv])=>s+cv.dh+cv.nh,0),note:r.note||r.status||''}));
         const md=document.createElement('div');md.id='eaUncModal';
         md.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px)';
         md.onclick=function(e){if(e.target===md)md.style.display='none';};
         let mh='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column">';
-        mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+uncRecs.length+'건 · '+Math.round(uncRecs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
+        mh+='<div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:15px;font-weight:700">미분류 상세</div><div style="font-size:12px;color:#EB5757;font-weight:600">'+modalRecs.length+'건 · '+Math.round(modalRecs.reduce((s,r)=>s+r.hours,0)*10)/10+'h</div></div><button onclick="document.getElementById(\'eaUncModal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px">✕</button></div>';
         mh+='<div style="overflow-y:auto;flex:1;padding:0"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#fafafa"><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">날짜</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5">작업자</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">과업명</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">구분</th><th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid #e5e5e5">시간</th><th style="padding:10px 12px;text-align:left;font-weight:700;border-bottom:1px solid #e5e5e5;min-width:180px">비고/진행사항</th></tr></thead><tbody>';
-        uncRecs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
+        modalRecs.sort((a,b)=>a.date.localeCompare(b.date)||a.worker.localeCompare(b.worker)).forEach(u=>{
           mh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px">'+u.date+'</td><td style="padding:8px 12px;font-weight:600">'+u.worker+'</td><td style="padding:8px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+u.project+'</td><td style="padding:8px 12px;text-align:center"><span class="ea-tag '+u.gubun+'">'+u.gubun+'</span></td><td style="padding:8px 12px;text-align:center;color:#EB5757;font-weight:700">'+Math.round(u.hours*10)/10+'h</td><td style="padding:8px 12px;font-size:12px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(u.note||'-')+'">'+(u.note||'-')+'</td></tr>';
         });
         mh+='</tbody></table></div></div>';
