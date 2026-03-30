@@ -1542,6 +1542,8 @@
     .ea-tab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;font-family:var(--font);color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-1px}
     .ea-tab:hover{color:var(--text)}
     .ea-tab.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
+    .ea-tbl-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+    .ea-tbl-wrap .ea-tbl{min-width:auto}
     .ea-tbl{width:100%;min-width:700px;border-collapse:separate;border-spacing:0;font-size:15px}
     .ea-tbl thead th{position:sticky;top:0;z-index:5;background:var(--bg-muted);color:var(--text-sub);padding:11px 12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border-light);white-space:nowrap}
     .ea-tbl thead th:last-child{border-right:none}
@@ -2110,7 +2112,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.5';
+    const APP_VER = 'v3.5.6';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3238,9 +3240,9 @@
 
     function eaRenderPerson(data){
       const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
-      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="width:100%;table-layout:fixed"><thead><tr><th style="width:70px">작업자</th><th class="l">과업명</th><th style="width:46px">구분</th>';
+      let h='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl" style="width:100%;table-layout:fixed"><thead><tr><th style="width:66px">작업자</th><th class="l">과업명</th><th style="width:44px">구분</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
-      h+='<th style="width:56px">합계</th><th style="width:80px">비고</th></tr></thead><tbody>';
+      h+='<th style="width:56px">합계</th><th style="width:100px">비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
       workers.forEach((w,wi)=>{
         const wr=data.filter(r=>r.worker===w);const projs=[...new Set(wr.map(r=>r.project))];
@@ -3271,7 +3273,7 @@
       const days=eaGetDays(data);const projs=[...new Set(data.map(r=>r.project))];
       const totalH=data.reduce((s,r)=>s+r.hours,0);
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">프로젝트별 현황</span><span class="s-unit">'+projs.length+'개 과업</span></div>';
-      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:220px">과업명</th><th style="width:50px">구분</th><th class="l" style="width:100px">투입인원</th>';
+      h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="min-width:180px">과업명</th><th style="width:50px">구분</th><th class="l" style="width:100px">투입인원</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:100px">비중</th></tr></thead><tbody>';
       const pData=projs.map(p=>{const pr=data.filter(r=>r.project===p);const ws=[...new Set(pr.map(r=>r.worker))];const tot=pr.reduce((s,r)=>s+r.hours,0);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}});return{name:p,gubun:pr[0]?.gubun||'',workers:ws,tot,pDay};}).sort((a,b)=>b.tot-a.tot);
@@ -3288,7 +3290,7 @@
       let gDay={};days.forEach(d=>gDay[d.date]=0);data.forEach(r=>{if(gDay[r.date]!==undefined)gDay[r.date]+=r.hours;});
       h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
       days.forEach(d=>{h+='<td>'+Math.round(gDay[d.date]*10)/10+'</td>';});
-      h+='<td>'+Math.round(totalH)+'h</td><td></td></tr></tbody></table>';
+      h+='<td>'+Math.round(totalH)+'h</td><td></td></tr></tbody></table></div>';
       document.getElementById('eaContent').innerHTML=h;
     }
 
@@ -3330,7 +3332,7 @@
       const catColors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00'];
       if(catSorted.length){
         h+='<div style="margin-bottom:16px"><div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">업무유형별 투입</span></div>';
-        h+='<table class="ea-tbl"><thead><tr><th class="l" style="width:70px">유형</th>';
+        h+='<div class="ea-tbl-wrap"><table class="ea-tbl"><thead><tr><th class="l" style="width:70px">유형</th>';
         wks.forEach(w=>{h+='<th style="width:70px">'+w+'</th>';});
         h+='<th style="width:70px">합계</th><th style="width:80px">비중</th></tr></thead><tbody>';
         catSorted.forEach(([c,cd],i)=>{
@@ -3339,12 +3341,12 @@
           wks.forEach(w=>{const v=cd.w[w]||0;h+=v?'<td>'+v+'</td>':'<td class="z">-</td>';});
           h+='<td class="tot">'+Math.round(cd.t*10)/10+'</td><td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
         });
-        h+='</tbody></table></div>';
+        h+='</tbody></table></div></div>';
       }
 
       // 인원별 상세
       h+='<div class="section-header" style="margin-bottom:8px"><div class="circle"></div><span class="title">인원별 투입 상세</span></div>';
-      h+='<table class="ea-tbl"><thead><tr><th class="l" style="width:60px">이름</th><th style="width:70px">정규</th><th style="width:70px">연장</th><th style="width:70px">합계</th><th style="width:80px">일평균</th><th style="width:80px">비중</th></tr></thead><tbody>';
+      h+='<div class="ea-tbl-wrap"><table class="ea-tbl"><thead><tr><th class="l" style="width:60px">이름</th><th style="width:70px">정규</th><th style="width:70px">연장</th><th style="width:70px">합계</th><th style="width:80px">일평균</th><th style="width:80px">비중</th></tr></thead><tbody>';
       const perW={};projData.forEach(r=>{if(!perW[r.worker])perW[r.worker]={h:0,ot:0,days:new Set()};perW[r.worker].h+=r.hours;perW[r.worker].ot+=r.ot;perW[r.worker].days.add(r.date);});
       Object.entries(perW).sort((a,b)=>(b[1].h+b[1].ot)-(a[1].h+a[1].ot)).forEach(([w,d])=>{
         const tot=d.h+d.ot;const pct=grandH>0?Math.round(tot/grandH*1000)/10:0;
@@ -3354,7 +3356,7 @@
         h+='<td class="tot">'+Math.round(tot)+'h</td><td>'+dayAvg+'h/일</td>';
         h+='<td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:#2F80ED"></div></div><div class="ea-pct-val" style="color:#2F80ED">'+pct+'%</div></div></td></tr>';
       });
-      h+='</tbody></table>';
+      h+='</tbody></table></div>';
       document.getElementById('eaContent').innerHTML=h;
     }
 
@@ -3383,16 +3385,20 @@
         const entries=Object.entries(r.cats);
         let catH=0;entries.forEach(([cat,cv])=>{catH+=cv.dh+cv.nh;});
         const rem=r.hours-catH;
-        if(rem>0.1)uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});
+        if(rem>0.1){
+          const isVac=r.gubun==='휴가'||r.project==='휴가';
+          const isComm=r.project==='공통'||r.project==='공가';
+          if(!isVac&&!isComm)uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});
+        }
       });
 
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle" style="background:#2F80ED"></div><span class="title">프로그램 사용현황</span><span class="s-unit" style="color:#EB5757">'+psorted.length+'종</span></div>';
-      h+='<div style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">프로그램</th>';
+      h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">프로그램</th>';
       workers.forEach(w=>{h+='<th style="min-width:56px">'+w+'</th>';});
       h+='<th style="width:56px">합계</th><th style="width:56px">야간</th><th style="width:80px">비율</th></tr></thead><tbody>';
       psorted.forEach(([pg,pd],i)=>{
         const pct=ptot>0?Math.round(pd.t/ptot*1000)/10:0;const col=pcolors[i%pcolors.length];
-        const isUnc=pg==='미분류';
+        const isUnc=pg==='미분류'&&uncRecs.length>0;
         h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+pg+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
         workers.forEach(w=>{const v=pd.w[w]||0;h+=v?'<td>'+Math.round(v*10)/10+'</td>':'<td class="z">-</td>';});
         h+='<td class="tot">'+Math.round(pd.t*10)/10+'</td>';
@@ -3423,13 +3429,13 @@
       const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00','#AEB5BC','#06B6D4','#EC4899'];
 
       h+='<div style="margin-top:20px"><div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit" style="color:#EB5757">'+catSorted.length+'개 유형</span></div></div>';
-      h+='<div style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">업무유형</th>';
+      h+='<div class="ea-tbl-wrap" style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">업무유형</th>';
       workers.forEach(w=>{h+='<th style="min-width:56px">'+w+'</th>';});
       h+='<th style="width:56px">합계</th><th style="width:90px">비중</th></tr></thead><tbody>';
 
       catSorted.forEach((cat,i)=>{
         const col=colors[i%colors.length];
-        const isUnc=cat.name==='기타'&&uncRecs.length>0;
+        const isUnc=(cat.name==='기타'||cat.name==='미분류')&&uncRecs.length>0;
         h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+cat.name+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
         workers.forEach(w=>{const v=cat.wm[w]||0;h+=v?'<td>'+Math.round(v*10)/10+'</td>':'<td class="z">-</td>';});
         const pct=totalH>0?Math.round(cat.tot/totalH*1000)/10:0;
