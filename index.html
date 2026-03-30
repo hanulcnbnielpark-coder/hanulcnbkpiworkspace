@@ -1542,7 +1542,7 @@
     .ea-tab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;font-family:var(--font);color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-1px}
     .ea-tab:hover{color:var(--text)}
     .ea-tab.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
-    .ea-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
+    .ea-tbl{width:100%;min-width:700px;border-collapse:separate;border-spacing:0;font-size:15px}
     .ea-tbl thead th{position:sticky;top:0;z-index:5;background:var(--bg-muted);color:var(--text-sub);padding:11px 12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border-light);white-space:nowrap}
     .ea-tbl thead th:last-child{border-right:none}
     .ea-tbl thead th.l{text-align:left}
@@ -1551,7 +1551,7 @@
     .ea-tbl tbody td:last-child{border-right:none}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
-    .ea-tbl tbody td.pj{text-align:left;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ea-tbl tbody td.pj{text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ea-tbl tbody td.z{color:var(--text-faint)}
     .ea-tbl tbody td.tot{font-weight:700;color:#2F80ED;background:#F7F9FC}
     .ea-tbl tbody td.ot-cell{position:relative;background:#FFF5F5}
@@ -2110,7 +2110,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.3';
+    const APP_VER = 'v3.5.4';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3140,7 +3140,7 @@
     function eaFiltered(){
       let d=EA;if(EA_TEAM)d=d.filter(r=>r.team===EA_TEAM);
       if(EA_YEAR)d=d.filter(r=>r.date.substring(0,4)===EA_YEAR);
-      if(EA_MODE==='week'&&EA_WK){const days=eaWD(EA_WK).map(x=>x.toISOString().substring(0,10));d=d.filter(r=>days.includes(r.date));}
+      if(EA_MODE==='week'&&EA_WK){const days=eaWD(EA_WK).map(x=>eaLocalDate(x));d=d.filter(r=>days.includes(r.date));}
       else if(EA_MODE==='month'&&EA_MON){d=d.filter(r=>r.date.substring(0,7)===EA_MON);}
       return d;
     }
@@ -3220,7 +3220,12 @@
       else eaRenderType(data);
     }
 
+    function eaLocalDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function eaGetDays(data){
+      if(EA_MODE==='week'&&EA_WK){
+        const wkDays=eaWD(EA_WK);
+        return wkDays.map(d=>({date:eaLocalDate(d),dow:eaDN(d),short:eaFD(d)}));
+      }
       const dates=[...new Set(data.map(r=>r.date))].sort();
       return dates.map(d=>({date:d,dow:eaDN(new Date(d)),short:eaFD(new Date(d))}));
     }
@@ -3233,7 +3238,7 @@
 
     function eaRenderPerson(data){
       const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
-      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="table-layout:fixed;width:100%"><thead><tr><th style="width:70px">작업자</th><th class="l" style="width:220px">과업명</th><th style="width:50px">구분</th>';
+      let h='<div style="overflow-x:auto"><table class="ea-tbl" style="min-width:900px"><thead><tr><th style="width:70px">작업자</th><th class="l" style="min-width:160px;max-width:200px">과업명</th><th style="width:46px">구분</th>';
       days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
       h+='<th style="width:56px">합계</th><th style="width:80px">비고</th></tr></thead><tbody>';
       let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
@@ -3244,7 +3249,7 @@
           const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
           let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
           h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
-          h+='<td class="pj">'+p+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          h+='<td class="pj"><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+p.replace(/"/g,'&quot;')+'">'+p+'</div></td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
           days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
           h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
         });
