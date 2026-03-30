@@ -2108,7 +2108,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.4.1';
+    const APP_VER = 'v3.4.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3123,7 +3123,8 @@
           const rg=parseFloat(v[iR])||0,ot=parseFloat(v[iO])||0;
           const cats={};catCols.forEach(cc=>{const di=cc.diCol>=0?(v[cc.diCol]||''):'';const dh=cc.dhCol>=0?parseFloat(v[cc.dhCol])||0:0;const ni=cc.niCol>=0?(v[cc.niCol]||''):'';const nh=cc.nhCol>=0?parseFloat(v[cc.nhCol])||0:0;if(di||dh>0||ni||nh>0)cats[cc.name]={di,dh,ni,nh};});
           const rawTm=(v[iT]||'').trim();const cleanTm=(rawTm.length>15||rawTm.includes(',')||/\d{2,}/.test(rawTm)||rawTm.includes('Excel'))?'':rawTm;
-          EA.push({date:eaPD(v[iD]),worker:v[iW],team:cleanTm,gubun:v[iG]||'',project:v[iP],regular:rg,ot:ot,hours:parseFloat(v[iH])||(rg+ot),cats,note:iNote>=0?(v[iNote]||''):'',status:iST>=0?(v[iST]||''):''});}
+          const parsedDate=eaPD(v[iD]);if(!/^\d{4}-\d{2}-\d{2}/.test(parsedDate))continue;
+          EA.push({date:parsedDate,worker:v[iW],team:cleanTm,gubun:v[iG]||'',project:v[iP],regular:rg,ot:ot,hours:parseFloat(v[iH])||(rg+ot),cats,note:iNote>=0?(v[iNote]||''):'',status:iST>=0?(v[iST]||''):''});}
         if(EA.length){toast('타임시트 '+EA.length+'건 로드','success');return;}
       }catch(e){console.warn('EA fetch error:',e);}}
     }
@@ -3150,14 +3151,14 @@
     function eaBuildUI(){
       if(!EA.length){document.getElementById('eaContent').innerHTML='<div class="ea-empty"><i class="ri-bar-chart-grouped-line"></i><p>타임시트DB 데이터를 불러올 수 없습니다</p><p style="font-size:12px">기본정보관리 → GAS URL 및 타임시트 시트ID를 확인하세요</p></div>';return;}
       // Auto-detect current week
-      if(!EA_YEAR){const yrs=[...new Set(EA.map(r=>r.date.substring(0,4)))].sort();EA_YEAR=yrs[yrs.length-1]||'';}
+      if(!EA_YEAR){const yrs=[...new Set(EA.map(r=>r.date.substring(0,4)).filter(y=>/^20\d{2}$/.test(y)))].sort();EA_YEAR=yrs[yrs.length-1]||'';}
       if(!EA_WK){const wks=[...new Set(EA.filter(r=>r.date.substring(0,4)===EA_YEAR).map(r=>eaWK(r.date)))].sort();EA_WK=wks[wks.length-1]||'';}
       if(!EA_MON){const mons=[...new Set(EA.filter(r=>r.date.substring(0,4)===EA_YEAR).map(r=>r.date.substring(0,7)))].sort();EA_MON=mons[mons.length-1]||'';}
       eaRenderSelector();eaRenderKPI();eaRenderTabs();eaRenderContent();
     }
 
     function eaRenderSelector(){
-      const years=[...new Set(EA.map(r=>r.date.substring(0,4)))].sort();
+      const years=[...new Set(EA.map(r=>r.date.substring(0,4)).filter(y=>/^20\d{2}$/.test(y)))].sort();
       const yd=EA.filter(r=>r.date.substring(0,4)===EA_YEAR);
       const weeks=[...new Set(yd.map(r=>eaWK(r.date)))].sort();
       const months=[...new Set(yd.map(r=>r.date.substring(0,7)))].sort();
@@ -3254,7 +3255,7 @@
       });
       h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
       days.forEach(d=>{h+='<td>'+Math.round(gDayTot[d.date]*10)/10+'</td>';});
-      h+='<td>'+Math.round(gReg+gOT)+'h</td><td style="font-size:11px;opacity:.6">근무'+Math.round(gReg)+'·연장'+Math.round(gOT)+'</td></tr>';
+      h+='<td>'+Math.round(gReg+gOT)+'h</td><td style="font-size:11px;line-height:1.4;opacity:.7">근무 '+Math.round(gReg)+'h<br>연장 '+Math.round(gOT)+'h</td></tr>';
       h+='</tbody></table>';document.getElementById('eaContent').innerHTML=h;
     }
 
@@ -3283,7 +3284,11 @@
 
     function eaRenderType(data){
       const days=eaGetDays(data);const totalH=data.reduce((s,r)=>s+r.hours,0);
-      const typMap={};data.forEach(r=>{Object.entries(r.cats).forEach(([cat,cv])=>{if(!typMap[cat])typMap[cat]={workers:new Set(),days:{},tot:0,ot:0};typMap[cat].workers.add(r.worker);const th=cv.dh+cv.nh;typMap[cat].tot+=th;typMap[cat].ot+=cv.nh;if(!typMap[cat].days[r.date])typMap[cat].days[r.date]={reg:0,ot:0};typMap[cat].days[r.date].reg+=cv.dh;typMap[cat].days[r.date].ot+=cv.nh;});});
+      const typMap={};data.forEach(r=>{
+        const entries=Object.entries(r.cats);
+        if(entries.length>0){entries.forEach(([cat,cv])=>{if(!typMap[cat])typMap[cat]={workers:new Set(),days:{},tot:0,ot:0};typMap[cat].workers.add(r.worker);const th=cv.dh+cv.nh;typMap[cat].tot+=th;typMap[cat].ot+=cv.nh;if(!typMap[cat].days[r.date])typMap[cat].days[r.date]={reg:0,ot:0};typMap[cat].days[r.date].reg+=cv.dh;typMap[cat].days[r.date].ot+=cv.nh;});}
+        else if(r.hours>0){const cat=r.gubun||'미분류';if(!typMap[cat])typMap[cat]={workers:new Set(),days:{},tot:0,ot:0};typMap[cat].workers.add(r.worker);typMap[cat].tot+=r.hours;typMap[cat].ot+=r.ot;if(!typMap[cat].days[r.date])typMap[cat].days[r.date]={reg:0,ot:0};typMap[cat].days[r.date].reg+=r.regular;typMap[cat].days[r.date].ot+=r.ot;}
+      });
       const types=Object.entries(typMap).sort((a,b)=>b[1].tot-a[1].tot);
       const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00','#AEB5BC'];
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit">'+types.length+'개 유형</span></div>';
@@ -3298,7 +3303,7 @@
         h+='<td class="tot">'+Math.round(v.tot*10)/10+'</td><td'+(v.ot>0?' style="color:#EB5757;font-weight:600"':' class="z"')+'>'+(v.ot>0?v.ot+'h':'-')+'</td>';
         h+='<td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
       });
-      let gDay={};days.forEach(d=>gDay[d.date]=0);data.forEach(r=>{Object.values(r.cats).forEach(cv=>{if(gDay[r.date]!==undefined)gDay[r.date]+=cv.dh+cv.nh;});});
+      let gDay={};days.forEach(d=>gDay[d.date]=0);data.forEach(r=>{if(gDay[r.date]!==undefined)gDay[r.date]+=r.hours;});
       const gOT=types.reduce((s,t)=>s+t[1].ot,0);
       h+='<tr class="gt"><td colspan="2" style="text-align:center">합계</td>';
       days.forEach(d=>{h+='<td>'+Math.round(gDay[d.date]*10)/10+'</td>';});
