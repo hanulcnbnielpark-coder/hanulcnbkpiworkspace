@@ -1546,7 +1546,7 @@
     .ea-tbl thead th{padding:6px 10px;font-size:12px;font-weight:500;color:var(--text-light);text-align:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-white);z-index:1}
     .ea-tbl thead th.l{text-align:left}
     .ea-tbl thead th .sub{display:block;font-size:10px;color:var(--text-faint);font-weight:400}
-    .ea-tbl tbody td{padding:7px 10px;text-align:center;font-size:13px;border-bottom:1px solid var(--border-light);color:var(--text);font-variant-numeric:tabular-nums}
+    .ea-tbl tbody td{padding:7px 10px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);font-variant-numeric:tabular-nums}
     .ea-tbl tbody td.l{text-align:left}
     .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
     .ea-tbl tbody td.pj{text-align:left;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1562,6 +1562,7 @@
     .ea-tbl tbody tr.gt td{background:var(--text);color:#fff;font-weight:700;font-size:13px;padding:8px 10px;border:none}
     .ea-tbl tbody tr.gt td .dim{font-size:11px;color:rgba(255,255,255,.5);margin-left:6px}
     .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):hover td{background:var(--bg-hover)}
+    .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):nth-child(even) td{background:var(--bg-muted)}
     .ea-tbl tbody td.ot-cell .ot-num{font-size:12px;color:#EB5757;font-weight:600;margin-left:1px}
     .ea-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
     .ea-tag.철도{background:#D3E5EF;color:#2F80ED}.ea-tag.도로{background:#DBEDDB;color:#0F7B0F}.ea-tag.공통{background:#F1F1EF;color:#787774}.ea-tag.단지{background:#FADEC9;color:#D9730D}.ea-tag.휴가{background:#F1F1EF;color:#9B9A97}
@@ -2108,7 +2109,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.4.9';
+    const APP_VER = 'v3.5.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -3370,13 +3371,23 @@
       const psorted=Object.entries(pm).sort((a,b)=>b[1].t-a[1].t);
       const pcolors=['#2F80ED','#9B51E0','#219653','#D9730D','#06B6D4','#EC4899','#F59F00','#787774','#EB5757','#AEB5BC'];
 
+      // Collect unclassified records for modal (shared by both tables)
+      const uncRecs=[];
+      data.forEach(r=>{
+        const entries=Object.entries(r.cats);
+        let catH=0;entries.forEach(([cat,cv])=>{catH+=cv.dh+cv.nh;});
+        const rem=r.hours-catH;
+        if(rem>0.1)uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});
+      });
+
       let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle" style="background:#2F80ED"></div><span class="title">프로그램 사용현황</span><span class="s-unit" style="color:#EB5757">'+psorted.length+'종</span></div>';
       h+='<div style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">프로그램</th>';
       workers.forEach(w=>{h+='<th style="min-width:56px">'+w+'</th>';});
       h+='<th style="width:56px">합계</th><th style="width:56px">야간</th><th style="width:80px">비율</th></tr></thead><tbody>';
       psorted.forEach(([pg,pd],i)=>{
         const pct=ptot>0?Math.round(pd.t/ptot*1000)/10:0;const col=pcolors[i%pcolors.length];
-        h+='<tr><td class="l" style="font-weight:600"><span class="ea-type-dot" style="background:'+col+'"></span>'+pg+'</td>';
+        const isUnc=pg==='미분류';
+        h+='<tr><td class="l" style="font-weight:600;'+(isUnc?'cursor:pointer;color:'+col+'" onclick="eaShowUncModal()':'"')+'><span class="ea-type-dot" style="background:'+col+'"></span>'+pg+(isUnc?' <span style="font-size:10px;color:var(--text-light)">🔍</span>':'')+'</td>';
         workers.forEach(w=>{const v=pd.w[w]||0;h+=v?'<td>'+Math.round(v*10)/10+'</td>':'<td class="z">-</td>';});
         h+='<td class="tot">'+Math.round(pd.t*10)/10+'</td>';
         h+='<td'+(pd.tn>0?' style="color:#EB5757;font-weight:600"':' class="z"')+'>'+(pd.tn>0?pd.tn+'h':'-')+'</td>';
@@ -3388,7 +3399,7 @@
       h+='<td>'+Math.round(ptot)+'h</td><td>'+(ntot>0?ntot+'h':'-')+'</td><td>100%</td></tr></tbody></table></div>';
 
       // ── 2. 업무유형별 현황 (카테고리 × 인원 매트릭스) ──
-      const catW={};const uncRecs=[];
+      const catW={};
       data.forEach(r=>{
         const entries=Object.entries(r.cats);
         if(entries.length>0){
@@ -3397,16 +3408,15 @@
             if(!catW[cat])catW[cat]={};if(!catW[cat][r.worker])catW[cat][r.worker]=0;catW[cat][r.worker]+=th;
           });
           const rem=r.hours-catH;
-          if(rem>0.1){if(!catW['기타'])catW['기타']={};if(!catW['기타'][r.worker])catW['기타'][r.worker]=0;catW['기타'][r.worker]+=rem;uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:rem,note:r.note||r.status||''});}
+          if(rem>0.1){if(!catW['기타'])catW['기타']={};if(!catW['기타'][r.worker])catW['기타'][r.worker]=0;catW['기타'][r.worker]+=rem;}
         } else if(r.hours>0){
           const cat=r.gubun||'기타';if(!catW[cat])catW[cat]={};if(!catW[cat][r.worker])catW[cat][r.worker]=0;catW[cat][r.worker]+=r.hours;
-          if(cat==='기타')uncRecs.push({date:r.date,worker:r.worker,project:r.project,gubun:r.gubun,hours:r.hours,note:r.note||r.status||''});
         }
       });
       const catSorted=Object.entries(catW).map(([c,wm])=>({name:c,wm,tot:Object.values(wm).reduce((s,v)=>s+v,0)})).sort((a,b)=>b.tot-a.tot);
       const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00','#AEB5BC','#06B6D4','#EC4899'];
 
-      h+='<div style="margin-top:20px" class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit" style="color:#EB5757">'+catSorted.length+'개 유형</span></div>';
+      h+='<div style="margin-top:20px"><div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit" style="color:#EB5757">'+catSorted.length+'개 유형</span></div></div>';
       h+='<div style="overflow-x:auto"><table class="ea-tbl"><thead><tr><th class="l" style="width:80px">업무유형</th>';
       workers.forEach(w=>{h+='<th style="min-width:56px">'+w+'</th>';});
       h+='<th style="width:56px">합계</th><th style="width:90px">비중</th></tr></thead><tbody>';
