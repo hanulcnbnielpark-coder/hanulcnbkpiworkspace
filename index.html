@@ -1520,6 +1520,57 @@
       .rate-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .pw-progress-track, .pw-progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
+
+    /* ═══ 인력분석 (Notion-style) ═══ */
+    .ea-container{max-width:100%;font-size:14px}
+    .ea-selector{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .ea-pill-group{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    .ea-pill{padding:5px 14px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:var(--font);background:var(--bg-white);color:var(--text-light)}
+    .ea-pill:not(:last-child){border-right:1px solid var(--border)}
+    .ea-pill.on{background:var(--bg-muted);color:var(--text);font-weight:600}
+    .ea-sel{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;font-size:13px;color:var(--text);background:var(--bg-white);cursor:pointer;outline:none}
+    .ea-nav{width:26px;height:26px;border-radius:4px;border:1px solid var(--border);background:var(--bg-white);cursor:pointer;font-size:14px;color:var(--text-light);display:flex;align-items:center;justify-content:center}
+    .ea-kpi-row{display:flex;gap:1px;margin-bottom:20px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .ea-kpi{flex:1;background:var(--bg-white);padding:14px 18px}
+    .ea-kpi-label{font-size:12px;color:var(--text-light);margin-bottom:4px}
+    .ea-kpi-num{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-1px}
+    .ea-kpi-num .u{font-size:14px;font-weight:400;color:var(--text-light);margin-left:1px}
+    .ea-kpi-detail{font-size:11px;color:var(--text-light);margin-top:3px}
+    .ea-kpi-detail .accent{color:#EB5757;font-weight:600}
+    .ea-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+    .ea-tab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;font-family:var(--font);color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-1px}
+    .ea-tab:hover{color:var(--text)}
+    .ea-tab.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
+    .ea-tbl{width:100%;border-collapse:collapse}
+    .ea-tbl thead th{padding:6px 10px;font-size:12px;font-weight:500;color:var(--text-light);text-align:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-white);z-index:1}
+    .ea-tbl thead th.l{text-align:left}
+    .ea-tbl thead th .sub{display:block;font-size:10px;color:var(--text-faint);font-weight:400}
+    .ea-tbl tbody td{padding:7px 10px;text-align:center;font-size:13px;border-bottom:1px solid var(--border-light);color:var(--text);font-variant-numeric:tabular-nums}
+    .ea-tbl tbody td.l{text-align:left}
+    .ea-tbl tbody td.nm{font-weight:600;font-size:14px;vertical-align:middle}
+    .ea-tbl tbody td.pj{text-align:left;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ea-tbl tbody td.z{color:var(--text-faint)}
+    .ea-tbl tbody td.tot{font-weight:700;color:#2F80ED;background:#F7F9FC}
+    .ea-tbl tbody td.ot-cell{position:relative;background:#FFF5F5}
+    .ea-tbl tbody td.ot-cell::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#EB5757;border-radius:2px}
+    .ea-tbl tbody td.ot-cell .ot-num{font-size:11px;color:#EB5757;font-weight:600}
+    .ea-tbl tbody tr.sub td{background:var(--bg-muted);font-weight:600;color:var(--text);border-bottom:1px solid var(--border);font-size:13px}
+    .ea-tbl tbody tr.sub td.lbl{font-weight:600;color:var(--text-light);font-size:12px;letter-spacing:.5px}
+    .ea-tbl tbody tr.sub td.ot-s{color:#EB5757;font-weight:600;font-size:12px}
+    .ea-tbl tbody tr.gap td{padding:0;height:6px;background:var(--bg-white);border:none}
+    .ea-tbl tbody tr.gt td{background:var(--text);color:#fff;font-weight:700;font-size:14px;padding:10px;border:none}
+    .ea-tbl tbody tr.gt td .dim{font-size:11px;color:rgba(255,255,255,.5);margin-left:6px}
+    .ea-tbl tbody tr:not(.sub):not(.gt):not(.gap):hover td{background:var(--bg-hover)}
+    .ea-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+    .ea-tag.철도{background:#D3E5EF;color:#2F80ED}.ea-tag.도로{background:#DBEDDB;color:#0F7B0F}.ea-tag.공통{background:#F1F1EF;color:#787774}.ea-tag.단지{background:#FADEC9;color:#D9730D}.ea-tag.휴가{background:#F1F1EF;color:#9B9A97}
+    .ea-type-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+    .ea-pct-bar{display:flex;align-items:center;gap:6px}
+    .ea-pct-track{flex:1;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+    .ea-pct-fill{height:100%;border-radius:3px}
+    .ea-pct-val{font-size:12px;font-weight:600;min-width:40px;text-align:right}
+    .ea-empty{text-align:center;padding:60px 20px;color:var(--text-light)}
+    .ea-empty i{font-size:48px;opacity:.3;display:block;margin-bottom:12px}
+
   </style>
 </head>
 <body>
@@ -1582,6 +1633,11 @@
         <div class="nav-item" data-view="kpiscore" onclick="goView('kpiscore')">
           <span class="icon"><i class="ri-edit-box-line"></i></span>
           <span class="label">실적 입력</span>
+        </div>
+
+        <div class="nav-item" data-view="workforce" onclick="goView('workforce')">
+          <span class="icon"><i class="ri-bar-chart-grouped-line"></i></span>
+          <span class="label">인력분석</span>
         </div>
 
         <div class="nav-item" data-view="timesheet" onclick="goView('timesheet')">
@@ -1834,6 +1890,16 @@
             <div id="kpiScoreContent"></div>
           </div>
 
+          <!-- 인력분석 -->
+          <div class="view-panel" id="view-workforce">
+            <div class="ea-container" id="eaRoot">
+              <div class="ea-selector" id="eaSelector"></div>
+              <div class="ea-kpi-row" id="eaKpiRow"></div>
+              <div class="ea-tabs" id="eaTabs"></div>
+              <div id="eaContent"></div>
+            </div>
+          </div>
+
           <div class="view-panel" id="view-timesheet">
             <div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">타임시트 분석</span>
               <span class="s-unit">소프트웨어별 업무 수행시간 기반 KPI</span></div>
@@ -2040,7 +2106,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.3.7';
+    const APP_VER = 'v3.4.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2058,9 +2124,9 @@
 
     // Role → 접근 가능 뷰 매핑
     const ROLE_VIEWS = {
-      admin:   ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','timesheet','evaluation','settings'],
-      manager: ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','timesheet','evaluation'],
-      user:    ['overview','monthly','daily','person','scorecard','kpiscore'],
+      admin:   ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','workforce','timesheet','evaluation','settings'],
+      manager: ['overview','monthly','daily','person','projmgr','scorecard','kpiscore','workforce','timesheet','evaluation'],
+      user:    ['overview','monthly','daily','person','scorecard','kpiscore','workforce'],
       viewer:  ['overview','person'],
     };
 
@@ -2153,7 +2219,7 @@
         {id:'high',      name:'고강도 업무 수행률',   weight:0.40, type:'timesheet', desc:'Civil3D+P-works+Fuzor / 50hr', base:50, sw:['Civil3D','P-works','Fuzor'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
         {id:'creative',  name:'창조적 업무 수행률',   weight:0.15, type:'timesheet', desc:'PPT+Infra+Twinmotion+Unreal+Premiere / 13hr', base:13, sw:['PPT','Infra','Premiere pro','Twinmotion','Unreal'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
         {id:'basic',     name:'기본적 업무 수행률',   weight:0.15, type:'timesheet', desc:'Revit+Navis+AutoCAD+Hwp+Excel+(공통+미분류+휴가+기타+Word+Trimble+P6) / 113hr', base:113, sw:['Revit','Navis','AutoCAD','Hwp','Excel','기타','공통','미분류','휴가','Word','Trimble','P6'], grades:[{g:'S',min:110},{g:'A',min:100},{g:'B',min:90},{g:'C',min:80},{g:'D',min:0}]},
-        {id:'billing',   name:'기성지급 기여율',      weight:0.10, type:'count', desc:'2인이하 기성 수행건수', grades:[{g:'S',min:4},{g:'A',min:3},{g:'B',min:2},{g:'C',min:1},{g:'D',min:0}]},
+        {id:'billing',   name:'기성지급 기여 및 교육수행',      weight:0.10, type:'count', desc:'2인이하 기성지급 프로젝트 수행건수', grades:[{g:'S',min:8},{g:'A',min:6},{g:'B',min:4},{g:'C',min:2},{g:'D',min:0}]},
       ],
       '총괄팀장': [
         {id:'billing_all', name:'기성지급 기여율(전체)', weight:0.30, type:'rate', grades:[{g:'S',min:100},{g:'A',min:90},{g:'B',min:80},{g:'C',min:70},{g:'D',min:0}]},
@@ -2447,6 +2513,7 @@
       kpiscore:{title:'실적 입력',sub:'rate/count 타입 KPI 실적을 직접 입력하고 스코어카드에 자동 반영합니다.',icon:'ri-edit-box-line'},
       scorecard:{title:'KPI 스코어카드',sub:'5개 KPI 항목별 가중치 기반 종합 등급을 산정합니다.',icon:'ri-medal-line'},
       timesheet:{title:'타임시트 분석',sub:'소프트웨어별 업무 수행시간과 KPI 카테고리별 달성률을 분석합니다.',icon:'ri-pie-chart-line'},
+      workforce:{title:'인력분석',sub:'주간·월간 인력 투입 현황을 인원별·프로젝트별·유형별로 분석합니다.',icon:'ri-bar-chart-grouped-line'},
       evaluation:{title:'평가 리포트',sub:'상·하반기 인사평가용 KPI 종합 리포트를 생성합니다.',icon:'ri-file-chart-line'},
       projmgr:{title:'프로젝트 관리',sub:'프로젝트 등록·수정·삭제와 상태를 관리합니다.',icon:'ri-building-line'},
       settings:{title:'기본정보관리',sub:'Google Sheets 연결, 인원 및 계정 정보를 관리합니다.',icon:'ri-settings-3-line'},
@@ -2458,7 +2525,7 @@
       const m=viewMeta[v];if(m){document.getElementById('pageTitle').textContent=m.title;document.getElementById('pageSubtitle').textContent=m.sub;document.getElementById('pageIcon').innerHTML=`<i class="${m.icon}"></i>`;}
       renderV();
     }
-    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,projmgr:renderProjMgr,scorecard:renderScorecard,kpiscore:renderKpiScoreInput,timesheet:renderTimesheet,evaluation:renderEvaluation,settings:renderStg}[VIEW]||(_=>{}))();}
+    function renderV(){({overview:renderOV,monthly:renderMonthlyInput,daily:renderDaily,person:renderPerson,projmgr:renderProjMgr,scorecard:renderScorecard,kpiscore:renderKpiScoreInput,workforce:renderWorkforce,timesheet:renderTimesheet,evaluation:renderEvaluation,settings:renderStg}[VIEW]||(_=>{}))();}
     function changeMonth(d){M+=d;if(M>12){M=1;Y++;}if(M<1){M=12;Y--;}updML();refreshData();}
     function updML(){const s=`${Y}년 ${String(M).padStart(2,'0')}월`;document.getElementById('monthLabel').textContent=s;document.getElementById('pageMonthLabel').textContent=s;}
 
@@ -3021,6 +3088,216 @@
 
 
     // ════════════════════════════════════════
+
+    // ════════════════════════════════════════
+    // 인력분석 모듈 (Workforce Analysis)
+    // ════════════════════════════════════════
+    let EA=[],EA_ALL_CATS=[],EA_MODE='week',EA_TAB='person',EA_WK='',EA_MON='',EA_TEAM='';
+
+    async function eaFetchData(){
+      const sid=TIMESHEET_SHEET_ID;if(!sid)return;
+      const names=['타임시트DB','타임시트','설계팀장-DB'];
+      for(const nm of names){try{
+        const u='https://docs.google.com/spreadsheets/d/'+sid+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(nm);
+        const r=await fetch(u);if(!r.ok)continue;const txt=await r.text();
+        const rows=txt.trim().split('\n').map(l=>{const m=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='"')q=!q;else if(l[i]===','&&!q){m.push(c.replace(/^"|"$/g,''));c=''}else c+=l[i]}m.push(c.replace(/^"|"$/g,''));return m});
+        if(rows.length<2)continue;const h=rows[0].map(x=>x.trim());
+        const ci=n=>h.findIndex(x=>x.includes(n));
+        const iD=ci('작업일자'),iW=ci('작업자'),iT=ci('팀'),iG=ci('구분'),iP=ci('과업명');
+        const iR=Math.max(ci('업무시간'),ci('근무시간')),iO=Math.max(ci('야근'),ci('연장')),iH=ci('근로');
+        if(iD<0||iW<0||iP<0)continue;EA=[];
+        function eaPD(raw){if(!raw)return'';const s=String(raw).trim();
+          const gm=s.match(/Date\((\d{4}),(\d+),(\d+)\)/);if(gm)return gm[1]+'-'+String(parseInt(gm[2])+1).padStart(2,'0')+'-'+gm[3].padStart(2,'0');
+          if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.substring(0,10);
+          const sm=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(sm)return sm[3]+'-'+sm[1].padStart(2,'0')+'-'+sm[2].padStart(2,'0');
+          if(/^\d{4}\/\d{2}\/\d{2}/.test(s))return s.substring(0,10).replace(/\//g,'-');
+          const num=parseFloat(s);if(!isNaN(num)&&num>30000&&num<60000){const d=new Date((num-25569)*86400000);return d.toISOString().substring(0,10)}return s.substring(0,10);}
+        const isNew=h.some(x=>x.includes('_주간구분'));let catCols=[];
+        if(isNew){const seen=new Set();h.forEach((hx,idx)=>{const m=hx.match(/^(.+?)_주간구분$/);if(m&&!seen.has(m[1])){seen.add(m[1]);catCols.push({name:m[1],diCol:idx,dhCol:h.findIndex(x=>x===m[1]+'_주간시간'),niCol:h.findIndex(x=>x===m[1]+'_야간구분'),nhCol:h.findIndex(x=>x===m[1]+'_야간시간')});}});}
+        else{[['모델','모주구','모주시','모야구','모야시'],['시각화','시주구','시주시','시야구','시야시'],['자동화','자주구','자주시','자야구','자야시'],['문서','문주구','문주시','문야구','문야시'],['P/W','P주구','P주시','P야구','P야시'],['공통','공주구','공주시','공야구','공야시']].forEach(([nm,di,dh,ni,nh])=>{const a=ci(di),b=ci(dh),c2=ni?ci(ni):-1,d2=nh?ci(nh):-1;if(a>=0||b>=0)catCols.push({name:nm,diCol:a,dhCol:b,niCol:c2,nhCol:d2});});}
+        EA_ALL_CATS=[...new Set(catCols.map(c=>c.name))];
+        const iST=ci('진행사항'),iNote=ci('비고');
+        for(let i=1;i<rows.length;i++){const v=rows[i];if(!v[iD])continue;
+          const rg=parseFloat(v[iR])||0,ot=parseFloat(v[iO])||0;
+          const cats={};catCols.forEach(cc=>{const di=cc.diCol>=0?(v[cc.diCol]||''):'';const dh=cc.dhCol>=0?parseFloat(v[cc.dhCol])||0:0;const ni=cc.niCol>=0?(v[cc.niCol]||''):'';const nh=cc.nhCol>=0?parseFloat(v[cc.nhCol])||0:0;if(di||dh>0||ni||nh>0)cats[cc.name]={di,dh,ni,nh};});
+          EA.push({date:eaPD(v[iD]),worker:v[iW],team:(v[iT]||''),gubun:v[iG]||'',project:v[iP],regular:rg,ot:ot,hours:parseFloat(v[iH])||(rg+ot),cats,note:iNote>=0?(v[iNote]||''):'',status:iST>=0?(v[iST]||''):''});}
+        if(EA.length){toast('인력분석 '+EA.length+'건 로드','success');return;}
+      }catch(e){console.warn('EA fetch error:',e);}}
+    }
+
+    // Week helpers
+    function eaWK(ds){const d=new Date(ds);if(isNaN(d))return'0000-W00';const th=new Date(d);th.setDate(d.getDate()-((d.getDay()+6)%7)+3);const y=th.getFullYear(),j=new Date(y,0,4);return y+'-W'+String(1+Math.round(((th-j)/864e5-(th.getDay()+6)%7+3)/7)).padStart(2,'0')}
+    function eaWD(wk){if(!wk)return[];const[y,w]=wk.split('-W').map(Number);if(isNaN(y)||isNaN(w))return[];const j=new Date(y,0,4),m=new Date(j);m.setDate(j.getDate()-(j.getDay()||7)+1+(w-1)*7);const ds=[];for(let i=0;i<5;i++){const x=new Date(m);x.setDate(m.getDate()+i);ds.push(x)}return ds}
+    function eaFD(d){return(d.getMonth()+1)+'/'+d.getDate()}
+    function eaDN(d){return['일','월','화','수','목','금','토'][d.getDay()]}
+
+    function eaFiltered(){
+      let d=EA;if(EA_TEAM)d=d.filter(r=>r.team===EA_TEAM);
+      if(EA_MODE==='week'&&EA_WK){const days=eaWD(EA_WK).map(x=>x.toISOString().substring(0,10));d=d.filter(r=>days.includes(r.date));}
+      else if(EA_MODE==='month'&&EA_MON){d=d.filter(r=>r.date.substring(0,7)===EA_MON);}
+      return d;
+    }
+
+    function renderWorkforce(){
+      if(!EA.length){eaFetchData().then(()=>eaBuildUI());return;}
+      eaBuildUI();
+    }
+
+    function eaBuildUI(){
+      if(!EA.length){document.getElementById('eaContent').innerHTML='<div class="ea-empty"><i class="ri-bar-chart-grouped-line"></i><p>타임시트DB 데이터를 불러올 수 없습니다</p><p style="font-size:12px">기본정보관리 → GAS URL 및 타임시트 시트ID를 확인하세요</p></div>';return;}
+      // Auto-detect current week
+      if(!EA_WK){const wks=[...new Set(EA.map(r=>eaWK(r.date)))].sort();EA_WK=wks[wks.length-1]||'';}
+      if(!EA_MON){const mons=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();EA_MON=mons[mons.length-1]||'';}
+      eaRenderSelector();eaRenderKPI();eaRenderTabs();eaRenderContent();
+    }
+
+    function eaRenderSelector(){
+      const weeks=[...new Set(EA.map(r=>eaWK(r.date)))].sort();
+      const months=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();
+      const teams=[...new Set(EA.map(r=>r.team).filter(Boolean))].sort();
+      let h='<div class="ea-pill-group"><button class="ea-pill'+(EA_MODE==='week'?' on':'')+'" onclick="EA_MODE=\'week\';eaBuildUI()">주간</button><button class="ea-pill'+(EA_MODE==='month'?' on':'')+'" onclick="EA_MODE=\'month\';eaBuildUI()">월간</button></div>';
+      if(EA_MODE==='week'){
+        const wi=weeks.indexOf(EA_WK);
+        h+='<button class="ea-nav" onclick="eaNavWk(-1)">◁</button>';
+        h+='<select class="ea-sel" onchange="EA_WK=this.value;eaBuildUI()">';
+        weeks.forEach(w=>{const ds=eaWD(w);const lbl=ds.length?eaFD(ds[0])+'~'+eaFD(ds[4]):'';h+='<option value="'+w+'"'+(w===EA_WK?' selected':'')+'>'+w+' ('+lbl+')</option>';});
+        h+='</select><button class="ea-nav" onclick="eaNavWk(1)">▷</button>';
+      } else {
+        h+='<button class="ea-nav" onclick="eaNavMon(-1)">◁</button>';
+        h+='<select class="ea-sel" onchange="EA_MON=this.value;eaBuildUI()">';months.forEach(m=>{h+='<option value="'+m+'"'+(m===EA_MON?' selected':'')+'>'+m+'</option>';});
+        h+='</select><button class="ea-nav" onclick="eaNavMon(1)">▷</button>';
+      }
+      h+='<select class="ea-sel" onchange="EA_TEAM=this.value;eaBuildUI()"><option value="">전체 팀</option>';
+      teams.forEach(t=>{h+='<option value="'+t+'"'+(t===EA_TEAM?' selected':'')+'>'+t+'</option>';});h+='</select>';
+      document.getElementById('eaSelector').innerHTML=h;
+    }
+
+    function eaNavWk(d){const ws=[...new Set(EA.map(r=>eaWK(r.date)))].sort();const i=ws.indexOf(EA_WK);const ni=Math.max(0,Math.min(ws.length-1,i+d));EA_WK=ws[ni];eaBuildUI();}
+    function eaNavMon(d){const ms=[...new Set(EA.map(r=>r.date.substring(0,7)))].sort();const i=ms.indexOf(EA_MON);const ni=Math.max(0,Math.min(ms.length-1,i+d));EA_MON=ms[ni];eaBuildUI();}
+
+    function eaRenderKPI(){
+      const data=eaFiltered();const totalH=data.reduce((s,r)=>s+r.hours,0);
+      const totalReg=data.reduce((s,r)=>s+r.regular,0);const totalOT=data.reduce((s,r)=>s+r.ot,0);
+      const workers=[...new Set(data.filter(r=>r.gubun!=='휴가'&&r.project!=='공통'&&r.project!=='휴가').map(r=>r.worker))];
+      const avg=workers.length?Math.round(totalH/workers.length*10)/10:0;
+      const baseH=EA_MODE==='week'?40:160;const pct=baseH>0?Math.round(avg/baseH*100):0;
+      const otByW={};data.forEach(r=>{if(r.ot>0)otByW[r.worker]=(otByW[r.worker]||0)+r.ot;});
+      const topOT=Object.entries(otByW).sort((a,b)=>b[1]-a[1])[0];
+      const projs=[...new Set(data.filter(r=>r.gubun!=='휴가'&&r.project!=='공통'&&r.project!=='휴가').map(r=>r.project))];
+      const cards=[
+        {label:'총 투입시간',num:Math.round(totalH*10)/10,unit:'h',detail:'근무 '+Math.round(totalReg)+'h · 연장 '+Math.round(totalOT)+'h'},
+        {label:'투입인원',num:workers.length,unit:'명',detail:'공통/휴가 제외'},
+        {label:'인당 평균',num:avg,unit:'h',detail:(EA_MODE==='week'?'주':'월')+baseH+'h 기준 '+pct+'%'},
+        {label:'연장근무',num:Math.round(totalOT*10)/10,unit:'h',detail:topOT?topOT[0]+' '+topOT[1]+'h':'없음',accent:totalOT>0},
+        {label:'진행과업',num:projs.length,unit:'건',detail:'공통/휴가 제외'}
+      ];
+      document.getElementById('eaKpiRow').innerHTML=cards.map(c=>'<div class="ea-kpi"><div class="ea-kpi-label">'+c.label+'</div><div class="ea-kpi-num">'+c.num+'<span class="u">'+c.unit+'</span></div><div class="ea-kpi-detail">'+(c.accent?'<span class="accent">'+c.detail+'</span>':c.detail)+'</div></div>').join('');
+    }
+
+    function eaRenderTabs(){
+      document.getElementById('eaTabs').innerHTML=['person','project','type'].map(t=>{
+        const labels={person:'👤 인원별',project:'📂 프로젝트별',type:'📊 유형별'};
+        return '<button class="ea-tab'+(EA_TAB===t?' on':'')+'" onclick="EA_TAB=\''+t+'\';eaRenderContent()">'+labels[t]+'</button>';
+      }).join('');
+    }
+
+    function eaRenderContent(){
+      document.querySelectorAll('.ea-tab').forEach(t=>{const k=t.textContent.includes('인원')?'person':t.textContent.includes('프로젝트')?'project':'type';t.classList.toggle('on',k===EA_TAB);});
+      const data=eaFiltered();if(!data.length){document.getElementById('eaContent').innerHTML='<div class="ea-empty"><i class="ri-inbox-line"></i><p>해당 기간에 데이터가 없습니다</p></div>';return;}
+      if(EA_TAB==='person')eaRenderPerson(data);
+      else if(EA_TAB==='project')eaRenderProject(data);
+      else eaRenderType(data);
+    }
+
+    function eaGetDays(data){
+      const dates=[...new Set(data.map(r=>r.date))].sort();
+      return dates.map(d=>({date:d,dow:eaDN(new Date(d)),short:eaFD(new Date(d))}));
+    }
+
+    function eaCellHTML(val,ot){
+      if(!val&&!ot)return'<td class="z">-</td>';
+      if(ot>0)return'<td class="ot-cell">'+val+' <span class="ot-num">+'+ot+'</span></td>';
+      return'<td>'+val+'</td>';
+    }
+
+    function eaRenderPerson(data){
+      const days=eaGetDays(data);const workers=[...new Set(data.map(r=>r.worker))].sort();
+      let h='<table class="ea-tbl"><thead><tr><th style="min-width:60px">작업자</th><th class="l" style="min-width:200px">과업명</th><th style="width:50px">구분</th>';
+      days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
+      h+='<th style="width:56px">합계</th><th style="width:80px">비고</th></tr></thead><tbody>';
+      let gReg=0,gOT=0;const gDayTot={};days.forEach(d=>gDayTot[d.date]=0);
+      workers.forEach((w,wi)=>{
+        const wr=data.filter(r=>r.worker===w);const projs=[...new Set(wr.map(r=>r.project))];
+        let wReg=0,wOT=0;const wDay={};days.forEach(d=>wDay[d.date]={reg:0,ot:0});
+        projs.forEach((p,pi)=>{
+          const pr=wr.filter(r=>r.project===p);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});
+          let pTot=0;pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}pTot+=r.hours;});
+          h+='<tr>'+(pi===0?'<td class="nm" rowspan="'+projs.length+'">'+w+'</td>':'');
+          h+='<td class="pj">'+p+'</td><td><span class="ea-tag '+(pr[0]?.gubun||'')+'">'+(pr[0]?.gubun||'-')+'</span></td>';
+          days.forEach(d=>{const v=pDay[d.date];wDay[d.date].reg+=v.reg;wDay[d.date].ot+=v.ot;h+=eaCellHTML(v.reg||0,v.ot);});
+          h+='<td class="tot">'+Math.round(pTot*10)/10+'</td><td style="font-size:11px;color:var(--text-light)">'+(pr.find(r=>r.ot>0)?'<span style="color:#EB5757">연장 '+pr.reduce((s,r)=>s+r.ot,0)+'h</span>':'')+'</td></tr>';
+        });
+        days.forEach(d=>{gDayTot[d.date]+=wDay[d.date].reg+wDay[d.date].ot;});
+        const wTot=wr.reduce((s,r)=>s+r.hours,0);const wOTtot=wr.reduce((s,r)=>s+r.ot,0);gReg+=wTot-wOTtot;gOT+=wOTtot;
+        h+='<tr class="sub"><td></td><td class="lbl">소계</td><td></td>';
+        days.forEach(d=>{const v=wDay[d.date];h+=v.ot>0?'<td class="ot-cell">'+v.reg+' <span class="ot-num">+'+v.ot+'</span></td>':'<td>'+(v.reg||'-')+'</td>';});
+        h+='<td style="font-weight:700">'+Math.round(wTot)+'h</td><td class="ot-s">'+(wOTtot>0?'연장 '+wOTtot+'h':'')+'</td></tr>';
+        if(wi<workers.length-1)h+='<tr class="gap"><td colspan="'+(days.length+4)+'"></td></tr>';
+      });
+      h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
+      days.forEach(d=>{h+='<td>'+Math.round(gDayTot[d.date]*10)/10+'</td>';});
+      h+='<td>'+Math.round((gReg+gOT))+'h<span class="dim">근무'+Math.round(gReg)+'·연장'+Math.round(gOT)+'</span></td><td></td></tr>';
+      h+='</tbody></table>';document.getElementById('eaContent').innerHTML=h;
+    }
+
+    function eaRenderProject(data){
+      const days=eaGetDays(data);const projs=[...new Set(data.map(r=>r.project))];
+      const totalH=data.reduce((s,r)=>s+r.hours,0);
+      let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">프로젝트별 현황</span><span class="s-unit">'+projs.length+'개 과업</span></div>';
+      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:220px">과업명</th><th style="width:50px">구분</th><th class="l" style="width:100px">투입인원</th>';
+      days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
+      h+='<th style="width:56px">합계</th><th style="width:100px">비중</th></tr></thead><tbody>';
+      const pData=projs.map(p=>{const pr=data.filter(r=>r.project===p);const ws=[...new Set(pr.map(r=>r.worker))];const tot=pr.reduce((s,r)=>s+r.hours,0);const pDay={};days.forEach(d=>pDay[d.date]={reg:0,ot:0});pr.forEach(r=>{if(pDay[r.date]){pDay[r.date].reg+=r.regular;pDay[r.date].ot+=r.ot;}});return{name:p,gubun:pr[0]?.gubun||'',workers:ws,tot,pDay};}).sort((a,b)=>b.tot-a.tot);
+      const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757'];
+      pData.forEach((p,i)=>{
+        const pct=totalH>0?Math.round(p.tot/totalH*1000)/10:0;const col=colors[i%colors.length];
+        h+='<tr><td class="pj" style="font-weight:600">'+p.name+'</td><td><span class="ea-tag '+p.gubun+'">'+p.gubun+'</span></td>';
+        h+='<td class="l" style="font-size:12px;color:var(--text-light)">'+(p.workers.length>2?p.workers[0]+' 외 '+(p.workers.length-1):p.workers.join(', '))+'</td>';
+        days.forEach(d=>{const v=p.pDay[d.date];h+=v.ot>0?'<td class="ot-cell">'+(v.reg)+' <span class="ot-num">+'+v.ot+'</span></td>':(v.reg?'<td>'+v.reg+'</td>':'<td class="z">-</td>');});
+        h+='<td class="tot">'+Math.round(p.tot*10)/10+'</td><td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
+      });
+      let gDay={};days.forEach(d=>gDay[d.date]=0);data.forEach(r=>{if(gDay[r.date]!==undefined)gDay[r.date]+=r.hours;});
+      h+='<tr class="gt"><td colspan="3" style="text-align:center">합계</td>';
+      days.forEach(d=>{h+='<td>'+Math.round(gDay[d.date]*10)/10+'</td>';});
+      h+='<td>'+Math.round(totalH)+'h</td><td></td></tr></tbody></table>';
+      document.getElementById('eaContent').innerHTML=h;
+    }
+
+    function eaRenderType(data){
+      const days=eaGetDays(data);const totalH=data.reduce((s,r)=>s+r.hours,0);
+      const typMap={};data.forEach(r=>{Object.entries(r.cats).forEach(([cat,cv])=>{if(!typMap[cat])typMap[cat]={workers:new Set(),days:{},tot:0,ot:0};typMap[cat].workers.add(r.worker);const th=cv.dh+cv.nh;typMap[cat].tot+=th;typMap[cat].ot+=cv.nh;if(!typMap[cat].days[r.date])typMap[cat].days[r.date]={reg:0,ot:0};typMap[cat].days[r.date].reg+=cv.dh;typMap[cat].days[r.date].ot+=cv.nh;});});
+      const types=Object.entries(typMap).sort((a,b)=>b[1].tot-a[1].tot);
+      const colors=['#2F80ED','#9B51E0','#219653','#D9730D','#787774','#EB5757','#F59F00','#AEB5BC'];
+      let h='<div class="section-header" style="margin-bottom:8px;"><div class="circle"></div><span class="title">업무유형별 현황</span><span class="s-unit">'+types.length+'개 유형</span></div>';
+      h+='<table class="ea-tbl"><thead><tr><th class="l" style="min-width:120px">업무유형</th><th class="l" style="width:100px">투입인원</th>';
+      days.forEach(d=>{h+='<th style="width:56px">'+d.dow+'<span class="sub">'+d.short+'</span></th>';});
+      h+='<th style="width:56px">합계</th><th style="width:56px">야간</th><th style="width:100px">비중</th></tr></thead><tbody>';
+      types.forEach(([cat,v],i)=>{
+        const pct=totalH>0?Math.round(v.tot/totalH*1000)/10:0;const col=colors[i%colors.length];
+        const ws=[...v.workers];h+='<tr><td class="l" style="font-weight:600"><span class="ea-type-dot" style="background:'+col+'"></span>'+cat+'</td>';
+        h+='<td class="l" style="font-size:12px;color:var(--text-light)">'+(ws.length>2?ws[0]+' 외 '+(ws.length-1):ws.join(', '))+'</td>';
+        days.forEach(d=>{const dv=v.days[d.date];if(!dv)h+='<td class="z">-</td>';else if(dv.ot>0)h+='<td class="ot-cell">'+dv.reg+' <span class="ot-num">+'+dv.ot+'</span></td>';else h+='<td>'+dv.reg+'</td>';});
+        h+='<td class="tot">'+Math.round(v.tot*10)/10+'</td><td'+(v.ot>0?' style="color:#EB5757;font-weight:600"':' class="z"')+'>'+(v.ot>0?v.ot+'h':'-')+'</td>';
+        h+='<td><div class="ea-pct-bar"><div class="ea-pct-track"><div class="ea-pct-fill" style="width:'+pct+'%;background:'+col+'"></div></div><div class="ea-pct-val" style="color:'+col+'">'+pct+'%</div></div></td></tr>';
+      });
+      let gDay={};days.forEach(d=>gDay[d.date]=0);data.forEach(r=>{Object.values(r.cats).forEach(cv=>{if(gDay[r.date]!==undefined)gDay[r.date]+=cv.dh+cv.nh;});});
+      const gOT=types.reduce((s,t)=>s+t[1].ot,0);
+      h+='<tr class="gt"><td colspan="2" style="text-align:center">합계</td>';
+      days.forEach(d=>{h+='<td>'+Math.round(gDay[d.date]*10)/10+'</td>';});
+      h+='<td>'+Math.round(totalH)+'h</td><td>'+(gOT>0?gOT+'h':'-')+'</td><td></td></tr></tbody></table>';
+      document.getElementById('eaContent').innerHTML=h;
+    }
+
     // NEW: 타임시트 분석
     // ════════════════════════════════════════
     function renderTimesheet(){
@@ -3099,7 +3376,7 @@
         {key:'result',label:'정량적 성과 도출율',desc:'80점 이상 성과 도출 인정 건수',unit:'건',type:'number',grades:[{g:'S',min:4},{g:'A',min:3},{g:'B',min:2},{g:'C',min:1},{g:'D',min:0}]},
         {key:'billingRate',label:'기성지급 기여율',desc:'분기별 기성금 입금 목표치 달성률',unit:'%',type:'number',grades:[{g:'S',min:100},{g:'A',min:90},{g:'B',min:80},{g:'C',min:70},{g:'D',min:0}]},
       ]:[
-        {key:'billing',label:'기성지급 기여율',desc:'2인이하 기성지급 프로젝트 수행건수',unit:'건',type:'number',grades:[{g:'S',min:4},{g:'A',min:3},{g:'B',min:2},{g:'C',min:1},{g:'D',min:0}]},
+        {key:'billing',label:'기성지급 기여 및 교육수행',desc:'2인이하 기성지급 프로젝트 수행건수',unit:'건',type:'number',grades:[{g:'S',min:8},{g:'A',min:6},{g:'B',min:4},{g:'C',min:2},{g:'D',min:0}]},
       ];
 
       let h=`<div style="max-width:700px;">`;
