@@ -2106,7 +2106,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.0';
+    const APP_VER = 'v3.6.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2243,11 +2243,12 @@
       const team = m?.team || '';
       const pos = m?.position || '';
 
-      // roleType 결정 - 팀 컨텍스트 기반 (총괄팀 팀원은 별도 분류)
+      // roleType 결정 - 팀 컨텍스트 기반 (총괄팀 구성원은 별도 분류)
       let roleType;
       if (pos === '총괄팀장') roleType = '총괄팀장';
+      else if (team === '총괄팀' && pos === '팀장') roleType = '총괄팀장';  // 총괄팀 + 팀장 → 총괄팀장으로 승격
       else if (pos === '팀장') roleType = '팀장';
-      else if (team === '총괄팀') roleType = '총괄팀원';
+      else if (team === '총괄팀') roleType = '총괄팀원';  // 총괄팀 팀원은 별도
       else roleType = '팀원';
 
       // 1순위: 팀+직급 정확 매치 (BIM1팀_선임, 총괄팀_선임)
