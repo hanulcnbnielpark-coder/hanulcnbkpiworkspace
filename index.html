@@ -2106,7 +2106,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.5';
+    const APP_VER = 'v3.6.6';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2521,7 +2521,11 @@
       if(GAS_URL){try{const sc=await apiG('getKpiScores');KPI_SCORES=sc?.scores||[];}catch(e){console.warn('KPI 실적 로드 실패:',e);}}
       // Pre-cache logs
       if(GAS_URL){try{const lr=await apiG('getLogs',{limit:'500'});_logCache=lr?.logs||[];_logCacheTime=Date.now();}catch(e){}}
-      popDD();goView(VIEW);toast('데이터를 불러왔습니다','success');
+      popDD();
+      // double-RAF: DOM 레이아웃 완료 후 다음 paint cycle에 렌더 (Chart.js canvas 크기 0 방지)
+      goView(VIEW);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>renderV()));
+      toast('데이터를 불러왔습니다','success');
     }
 
     function scl(ri,col,val){const r=DATA.find(x=>x.rowIndex===ri);if(!r)return;if(col.startsWith('day_')){const d=parseInt(col.replace('day_',''));r.days[d]=val;r.totalWorked=Math.round(Object.values(r.days).reduce((s,v)=>s+v,0)*100)/100;r.achievementRate=r.targetDays>0?Math.round((r.totalWorked/r.targetDays)*100):0;}else if(col==='targetDays'){r.targetDays=val;r.achievementRate=val>0?Math.round((r.totalWorked/val)*100):0;}}
