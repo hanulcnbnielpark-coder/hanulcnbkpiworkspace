@@ -2106,7 +2106,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.7';
+    const APP_VER = 'v3.6.8';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2522,11 +2522,13 @@
       // Pre-cache logs
       if(GAS_URL){try{const lr=await apiG('getLogs',{limit:'500'});_logCache=lr?.logs||[];_logCacheTime=Date.now();}catch(e){}}
       popDD();
-      // 1차 렌더: RAF로 DOM 레이아웃 확보 후 렌더
-      goView(VIEW);
-      requestAnimationFrame(()=>requestAnimationFrame(()=>renderV()));
-      // 2차 렌더: 초기 접속 시 canvas 크기가 여전히 불안정한 경우 대비 (100ms 후 강제 재렌더)
-      setTimeout(()=>goView(VIEW), 150);
+      // ★ 초기 로드 시 Chart.js canvas 0-size 이슈 해결: 잠깐 다른 뷰로 갔다가 되돌아오기
+      // 사용자가 손으로 하는 "다른 페이지 갔다 오기" 동작을 자동 시뮬레이션
+      const origView = VIEW;
+      goView('projmgr');  // 차트 없는 가벼운 뷰로 잠시 전환
+      setTimeout(()=>{
+        goView(origView);  // 원래 뷰로 복귀 → 이때 차트가 정상 크기로 렌더
+      }, 30);
       toast('데이터를 불러왔습니다','success');
     }
 
