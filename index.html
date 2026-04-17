@@ -2106,7 +2106,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.6';
+    const APP_VER = 'v3.6.7';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2522,9 +2522,11 @@
       // Pre-cache logs
       if(GAS_URL){try{const lr=await apiG('getLogs',{limit:'500'});_logCache=lr?.logs||[];_logCacheTime=Date.now();}catch(e){}}
       popDD();
-      // double-RAF: DOM 레이아웃 완료 후 다음 paint cycle에 렌더 (Chart.js canvas 크기 0 방지)
+      // 1차 렌더: RAF로 DOM 레이아웃 확보 후 렌더
       goView(VIEW);
       requestAnimationFrame(()=>requestAnimationFrame(()=>renderV()));
+      // 2차 렌더: 초기 접속 시 canvas 크기가 여전히 불안정한 경우 대비 (100ms 후 강제 재렌더)
+      setTimeout(()=>goView(VIEW), 150);
       toast('데이터를 불러왔습니다','success');
     }
 
@@ -2801,14 +2803,46 @@
         let val=0,display='',raw=0;
         try {
         if(kpi.type==='auto'&&(kpi.id==='schedule'||kpi.id==='billing_all')){
-          if(role==='팀원'){const pd=DATA.filter(r=>r.person===person);val=pd.length?Math.round(pd.reduce((s,r)=>s+r.achievementRate,0)/pd.length):0;}
-          else{val=DATA.length?Math.round(DATA.reduce((s,r)=>s+r.achievementRate,0)/DATA.length):0;}
+          const targetMem=MEM.find(m=>m.name===person);
+          const pos=targetMem?.position||'';
+          const team=targetMem?.team||'';
+          if(role==='팀원'){
+            // 개인 달성률
+            const pd=DATA.filter(r=>r.person===person);
+            val=pd.length?Math.round(pd.reduce((s,r)=>s+r.achievementRate,0)/pd.length):0;
+          } else if(pos==='총괄팀장' || team==='총괄팀'){
+            // 총괄팀장: 본부 전체 평균
+            val=DATA.length?Math.round(DATA.reduce((s,r)=>s+r.achievementRate,0)/DATA.length):0;
+          } else {
+            // 일반 팀장: 본인 팀 평균
+            const teamMemberNames=MEM.filter(m=>m.team===team).map(m=>m.name);
+            const pd=DATA.filter(r=>teamMemberNames.includes(r.person));
+            val=pd.length?Math.round(pd.reduce((s,r)=>s+r.achievementRate,0)/pd.length):0;
+          }
           display=val+'%';raw=val;
         }
         else if(kpi.type==='auto'&&(kpi.id==='manage'||kpi.id==='manage_dept'||kpi.id==='manage_team')){
-          const pm={};DATA.forEach(r=>{if(!pm[r.person])pm[r.person]={t:0,c:0};pm[r.person].t+=r.achievementRate;pm[r.person].c++;});
-          const rates=Object.values(pm).map(v=>Math.round(v.t/v.c));
-          val=rates.length>1?Math.round(rates.reduce((a,b)=>a+b,0)/rates.length)-Math.min(...rates):0;
+          const targetMem=MEM.find(m=>m.name===person);
+          if(kpi.id==='manage_dept'){
+            // 본부원 관리율: 팀별 평균 달성률들의 편차 (팀 단위 집계)
+            const byTeam={};
+            DATA.forEach(r=>{
+              const m=MEM.find(mm=>mm.name===r.person);
+              const t=m?.team||'미분류';
+              if(!byTeam[t])byTeam[t]={sum:0,cnt:0};
+              byTeam[t].sum+=r.achievementRate;byTeam[t].cnt++;
+            });
+            const teamAvgs=Object.values(byTeam).filter(v=>v.cnt>0).map(v=>Math.round(v.sum/v.cnt));
+            val=teamAvgs.length>1?Math.round(teamAvgs.reduce((a,b)=>a+b,0)/teamAvgs.length)-Math.min(...teamAvgs):0;
+          } else {
+            // manage: 본인 팀 구성원 편차 / manage_team: 총괄팀 구성원 편차
+            const scopeTeam = kpi.id==='manage_team' ? '총괄팀' : (targetMem?.team||'');
+            const teamMemberNames=MEM.filter(m=>m.team===scopeTeam).map(m=>m.name);
+            const scope=DATA.filter(r=>teamMemberNames.includes(r.person));
+            const pm={};scope.forEach(r=>{if(!pm[r.person])pm[r.person]={t:0,c:0};pm[r.person].t+=r.achievementRate;pm[r.person].c++;});
+            const rates=Object.values(pm).map(v=>Math.round(v.t/v.c));
+            val=rates.length>1?Math.round(rates.reduce((a,b)=>a+b,0)/rates.length)-Math.min(...rates):0;
+          }
           display=val+'%p';raw=val;
         }
         else if(kpi.type==='timesheet'){
