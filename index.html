@@ -469,7 +469,7 @@ tailwind.config = {
 
   <!-- Footer -->
   <footer class="h-10 bg-slate-50 border-t border-slate-200/20 px-8 flex items-center justify-between text-[10px] text-slate-400 font-medium flex-shrink-0">
-    <div class="flex items-center gap-4"><span id="footerVer">ARCHITECT v3.5.1</span><span class="w-1 h-1 bg-slate-300 rounded-full"></span><span id="serverMode">연결됨</span></div>
+    <div class="flex items-center gap-4"><span id="footerVer">ARCHITECT v3.5.2</span><span class="w-1 h-1 bg-slate-300 rounded-full"></span><span id="serverMode">연결됨</span></div>
     <div class="flex items-center gap-2"><span class="text-primary font-bold">시스템 정상</span><span class="material-symbols-outlined text-[14px]">cloud_done</span></div>
   </footer>
 </main>
@@ -559,7 +559,7 @@ tailwind.config = {
 <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.5.1';
+    const APP_VER = 'v3.5.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Inter',sans-serif";
     Chart.defaults.font.size = 11;
@@ -695,18 +695,24 @@ tailwind.config = {
       const m = MEM.find(x => x.name === person);
       const team = m?.team || '';
       const pos = m?.position || '';
-      const roleType = (pos === '팀장' || pos === '총괄팀장') ? pos : '팀원';
 
-      // 1순위: 팀+직급 정확 매치 (BIM1팀_선임)
+      // roleType 결정 - 팀 컨텍스트 기반 (중요)
+      // 총괄팀 팀원은 일반 팀원과 KPI가 다르므로 별도 roleType 부여
+      let roleType;
+      if (pos === '총괄팀장') roleType = '총괄팀장';
+      else if (pos === '팀장') roleType = '팀장';
+      else if (team === '총괄팀') roleType = '총괄팀원';
+      else roleType = '팀원';
+
+      // 1순위: 팀+직급 정확 매치 (BIM1팀_선임, 총괄팀_선임)
       if (KPI_DEF_DYNAMIC[team + '_' + pos]?.length) return KPI_DEF_DYNAMIC[team + '_' + pos];
-      // 2순위: 팀+역할유형 (BIM1팀_팀원)
+      // 2순위: 팀+역할유형 (BIM1팀_팀원, 총괄팀_총괄팀원)
       if (KPI_DEF_DYNAMIC[team + '_' + roleType]?.length) return KPI_DEF_DYNAMIC[team + '_' + roleType];
       // 3순위: 전체+직급 (전체_선임)
       if (KPI_DEF_DYNAMIC['전체_' + pos]?.length) return KPI_DEF_DYNAMIC['전체_' + pos];
-      // 4순위: 전체+역할유형 (전체_팀원)
+      // 4순위: 전체+역할유형 (전체_팀원, 전체_총괄팀원)
       if (KPI_DEF_DYNAMIC['전체_' + roleType]?.length) return KPI_DEF_DYNAMIC['전체_' + roleType];
-      // 폴백: 총괄팀 팀원은 별도 정의
-      if (team === '총괄팀' && roleType === '팀원' && KPI_DEF_DEFAULT['총괄팀원']) return KPI_DEF_DEFAULT['총괄팀원'];
+      // 폴백: KPI_DEF_DEFAULT 기본값 (roleType 기준)
       return KPI_DEF_DEFAULT[roleType] || KPI_DEF_DEFAULT['팀원'];
     }
 
