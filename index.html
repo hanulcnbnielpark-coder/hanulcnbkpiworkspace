@@ -2126,7 +2126,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.7.1';
+    const APP_VER = 'v3.7.2';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2616,7 +2616,7 @@
           if(r) r.actualRowIndex = res.rowIndex;
         }
       }
-      if(VIEW==='overview') renderOV();
+      // renderOV는 호출하지 않음 - 종합현황 들어갈 때 새로 그려짐
     }
 
     // ─── View Management ───
@@ -4014,83 +4014,139 @@
     async function initSh(){if(!GAS_URL){toast('GAS URL 먼저 설정','error');return;}const r=await apiG('init');if(r?.success)toast('시트 구조 생성 완료','success');else toast('초기화 실패','error');}
 
     // ─── Handlers ───
-    // r2: 부동소수점 오차 방지용 반올림 (소수점 2자리)
     function r2(x){return Math.round(x*100)/100;}
     
-    // hDP: 계획(plan) 입력 핸들러
+    // 셀 색상 헬퍼 (렌더링 로직과 일치시킴)
+    function _planCellStyle(planVal){
+      const bg = planVal!=='' ? '#bbdefb' : '#f5fbff';
+      const color = planVal!=='' ? '#0d47a1' : '#b0bec5';
+      const weight = planVal!=='' ? '700' : '400';
+      return {bg, color, weight};
+    }
+    function _actualCellStyle(actualVal){
+      let bg = '#f9fdf9', color = '#c8e6c9';
+      if(actualVal !== ''){
+        if(actualVal >= 1){ bg = '#c8e6c9'; color = '#1b5e20'; }
+        else if(actualVal >= 0.5){ bg = '#fff3e0'; color = '#e65100'; }
+        else if(actualVal > 0){ bg = '#fff8e1'; color = '#bf360c'; }
+      }
+      const weight = actualVal!=='' ? '800' : '400';
+      return {bg, color, weight};
+    }
+    
+    // 달성률/합계 셀만 업데이트 (해당 행의 마지막 2개 td)
+    function _updateRowFooter(planRowIndex){
+      const r = DATA.find(x => x.planRowIndex === planRowIndex);
+      if(!r) return;
+      // 같은 행의 모든 td 중 마지막 2개
+      const anyInput = document.querySelector(`.actual-input[data-plan-row="${planRowIndex}"]`);
+      if(!anyInput) return;
+      const tr = anyInput.closest('tr');
+      if(!tr) return;
+      const tds = tr.querySelectorAll('td');
+      if(tds.length >= 2){
+        tds[tds.length-2].innerHTML = n2(r.totalWorked);
+        tds[tds.length-2].style.fontWeight = '800';
+        tds[tds.length-1].innerHTML = `<span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span>`;
+      }
+    }
+    
+    // hDP: 계획(plan) 입력 핸들러 (optimistic UI)
     function hDP(el){
       let v = el.value.trim();
       const planRowIndex = parseInt(el.dataset.planRow) || 0;
       const day = parseInt(el.dataset.day);
       const meta = {
-        ym: el.dataset.ym,
-        project: el.dataset.project,
-        task: el.dataset.task,
-        person: el.dataset.person,
-        target: parseFloat(el.dataset.target) || 0
+        ym: el.dataset.ym, project: el.dataset.project, task: el.dataset.task,
+        person: el.dataset.person, target: parseFloat(el.dataset.target) || 0
       };
       
+      let numVal;
       if(v === ''){
-        saveC(planRowIndex, `day_${day}`, 0, 'plan', meta);
-        renderMonthlyInput();
-        return;
+        numVal = 0;
+      } else {
+        numVal = parseFloat(v);
+        if(isNaN(numVal) || ![0, 0.25, 0.5, 0.75, 1].includes(numVal)){
+          toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
+          // 원래 값으로 복원
+          const r = DATA.find(x => x.planRowIndex === planRowIndex);
+          el.value = r && r.planDays && r.planDays[day]!==undefined ? r.planDays[day] : '';
+          return;
+        }
       }
-      v = parseFloat(v);
-      if(isNaN(v) || ![0, 0.25, 0.5, 0.75, 1].includes(v)){
-        toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
-        el.value = '';
-        return;
-      }
-      saveC(planRowIndex, `day_${day}`, v, 'plan', meta);
-      renderMonthlyInput();
+      
+      // 로컬 DATA 업데이트
+      saveC(planRowIndex, `day_${day}`, numVal, 'plan', meta);
+      
+      // 셀만 스타일 업데이트 (전체 re-render 안 함)
+      const displayVal = numVal === 0 ? '' : numVal;
+      const s = _planCellStyle(displayVal);
+      el.value = displayVal;
+      el.style.background = s.bg;
+      el.style.color = s.color;
+      el.style.fontWeight = s.weight;
     }
     
-    // hDA: 실적(actual) 입력 핸들러
+    // hDA: 실적(actual) 입력 핸들러 (optimistic UI)
     function hDA(el){
       let v = el.value.trim();
       const planRowIndex = parseInt(el.dataset.planRow) || 0;
       const day = parseInt(el.dataset.day);
       const meta = {
-        ym: el.dataset.ym,
-        project: el.dataset.project,
-        task: el.dataset.task,
-        person: el.dataset.person,
-        target: parseFloat(el.dataset.target) || 0
+        ym: el.dataset.ym, project: el.dataset.project, task: el.dataset.task,
+        person: el.dataset.person, target: parseFloat(el.dataset.target) || 0
       };
       
+      let numVal;
       if(v === ''){
-        saveC(planRowIndex, `day_${day}`, 0, 'actual', meta);
-        renderMonthlyInput();
-        return;
-      }
-      v = parseFloat(v);
-      if(isNaN(v) || ![0, 0.25, 0.5, 0.75, 1].includes(v)){
-        toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
-        el.value = '';
-        return;
-      }
-      // 일별 실적 합계 검증 (같은 사람의 다른 업무 실적과 합쳐서 1 초과 금지)
-      const curRow = DATA.find(x => x.planRowIndex === planRowIndex);
-      if(curRow){
-        const person = curRow.person;
-        const otherSum = r2(DATA.filter(x => x.person === person && x.planRowIndex !== planRowIndex)
-          .reduce((s, x) => s + ((x.actualDays && x.actualDays[day]) || 0), 0));
-        if(r2(otherSum + v) > 1){
-          toast(`${person}님의 ${day}일 실적 합계가 1을 초과합니다 (기존 ${otherSum} + 입력 ${v} = ${r2(otherSum+v)})`, 'error');
-          el.value = '';
+        numVal = 0;
+      } else {
+        numVal = parseFloat(v);
+        if(isNaN(numVal) || ![0, 0.25, 0.5, 0.75, 1].includes(numVal)){
+          toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
+          const r = DATA.find(x => x.planRowIndex === planRowIndex);
+          el.value = r && r.actualDays && r.actualDays[day]!==undefined ? r.actualDays[day] : '';
           return;
         }
       }
-      saveC(planRowIndex, `day_${day}`, v, 'actual', meta);
-      renderMonthlyInput();
+      
+      // 일별 실적 합계 검증
+      if(numVal > 0){
+        const curRow = DATA.find(x => x.planRowIndex === planRowIndex);
+        if(curRow){
+          const person = curRow.person;
+          const otherSum = r2(DATA.filter(x => x.person === person && x.planRowIndex !== planRowIndex)
+            .reduce((s, x) => s + ((x.actualDays && x.actualDays[day]) || 0), 0));
+          if(r2(otherSum + numVal) > 1){
+            toast(`${person}님의 ${day}일 실적 합계가 1을 초과합니다 (기존 ${otherSum} + 입력 ${numVal} = ${r2(otherSum+numVal)})`, 'error');
+            const r = curRow;
+            el.value = r && r.actualDays && r.actualDays[day]!==undefined ? r.actualDays[day] : '';
+            return;
+          }
+        }
+      }
+      
+      // 로컬 DATA 업데이트 (달성률/합계 재계산됨)
+      saveC(planRowIndex, `day_${day}`, numVal, 'actual', meta);
+      
+      // 셀 스타일 업데이트
+      const displayVal = numVal === 0 ? '' : numVal;
+      const s = _actualCellStyle(displayVal);
+      el.value = displayVal;
+      el.style.background = s.bg;
+      el.style.color = s.color;
+      el.style.fontWeight = s.weight;
+      
+      // 합계/달성률 셀 업데이트
+      _updateRowFooter(planRowIndex);
     }
     
-    // 기존 hD는 호환성 유지 (실적 저장으로 연결 - 구식 코드 방어)
+    // 기존 hD는 호환성 유지
     function hD(el){ return hDA(el); }
     
-    function hT(el){const v=parseFloat(el.value)||0;saveC(parseInt(el.dataset.row),'targetDays',v,'plan');}
-    function hMs(el){const v=parseInt(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.planRowIndex===ri);if(r){r.milestoneDay=v;}saveC(ri,'milestoneDay',v,'plan');renderMonthlyInput();}
-    function hMsT(el){const v=parseFloat(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.planRowIndex===ri);if(r){r.milestoneTarget=v;}saveC(ri,'milestoneTarget',v,'plan');renderMonthlyInput();}
+    function hT(el){const v=parseFloat(el.value)||0;saveC(parseInt(el.dataset.row),'targetDays',v,'plan');_updateRowFooter(parseInt(el.dataset.row));}
+    function hMs(el){const v=parseInt(el.value)||0;saveC(parseInt(el.dataset.row),'milestoneDay',v,'plan');}
+    function hMsT(el){const v=parseFloat(el.value)||0;saveC(parseInt(el.dataset.row),'milestoneTarget',v,'plan');}
     function nk(e,el){if(e.key==='Enter'){el.blur();const n=el.closest('td')?.nextElementSibling?.querySelector('input');if(n)n.focus();}if(e.key==='Tab'){e.preventDefault();el.blur();const d=e.shiftKey?'previousElementSibling':'nextElementSibling';const n=el.closest('td')?.[d]?.querySelector('input');if(n)n.focus();}if(e.key==='ArrowDown'){const td=el.closest('td'),ci=[...td.parentElement.children].indexOf(td),nr=td.parentElement.nextElementSibling;if(nr){const t=nr.children[ci]?.querySelector('input');if(t){e.preventDefault();el.blur();t.focus();}}}if(e.key==='ArrowUp'){const td=el.closest('td'),ci=[...td.parentElement.children].indexOf(td),pr=td.parentElement.previousElementSibling;if(pr){const t=pr.children[ci]?.querySelector('input');if(t){e.preventDefault();el.blur();t.focus();}}}}
 
     // ─── Modal ───
