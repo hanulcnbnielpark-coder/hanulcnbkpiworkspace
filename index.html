@@ -2133,7 +2133,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.7.4';
+    const APP_VER = 'v3.7.5';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2712,7 +2712,7 @@
       let d=DATA;if(ps.value)d=d.filter(r=>r.project===ps.value);if(tf?.value){const names=MEM.filter(m=>m.team===tf.value).map(m=>m.name);d=d.filter(r=>names.includes(r.person));}if(pm.value)d=d.filter(r=>r.person===pm.value);
       let h='<tr><th style="width:28px;"></th><th style="text-align:center;min-width:130px;">업무</th><th style="min-width:70px;">담당자</th><th>목표</th>';
       for(let i=1;i<=dim;i++){const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;h+=`<th class="day-cell${we?' weekend':''}${isT&&i===td?' today':''}">${i}<br><span style="font-size:11px;opacity:0.5">${dn[dow]}</span></th>`;}
-      h+=`<th>합계</th><th>달성률</th><th style="background:#fff3e0;color:#e65100;" title="해당 월 영업일수 ${bizDays}일 대비 실적 투입 비율">투입률<br><span style="font-size:10px;opacity:0.6;font-weight:400;">/${bizDays}일</span></th></tr>`;
+      h+=`<th>합계</th><th style="background:#e8f5e9;color:#2e7d32;">달성률</th><th style="background:#fff3e0;color:#e65100;" title="해당 월 영업일수 ${bizDays}일 대비 실적 투입 비율">투입률<br><span style="font-size:10px;opacity:0.6;font-weight:400;">/${bizDays}일</span></th></tr>`;
       document.getElementById('monthlyHead').innerHTML=h;
       const gr={};d.forEach(r=>{if(!gr[r.project])gr[r.project]=[];gr[r.project].push(r);});
       // ── 인별 일별 투입률 합계 계산 (전체 DATA 기준) ──
@@ -2759,8 +2759,14 @@
           }
           const utilization = bizDays > 0 ? Math.round((r.totalWorked / bizDays) * 100) : 0;
           const utilColor = utilization >= 100 ? '#d32f2f' : utilization >= 80 ? '#e65100' : utilization >= 50 ? '#1976d2' : '#757575';
-          b+=`<td style="font-weight:800;">${n2(r.totalWorked)}</td><td><span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span></td>`;
-          b+=`<td style="background:#fff8e1;font-weight:700;color:${utilColor};" title="${r.person}님의 이 업무 투입: ${n2(r.totalWorked)}일 / 영업일 ${bizDays}일">${utilization}%</td>`;
+          const utilBg = utilization >= 100 ? '#ffebee' : utilization >= 80 ? '#fff3e0' : utilization >= 50 ? '#e3f2fd' : '#f5f5f5';
+          // 달성률도 투입률과 같은 스타일 (배경색 꽉 찬 셀)
+          const achRate = r.achievementRate;
+          const achColor = achRate >= 100 ? '#2e7d32' : achRate >= 80 ? '#1976d2' : achRate >= 60 ? '#e65100' : '#d32f2f';
+          const achBg = achRate >= 100 ? '#e8f5e9' : achRate >= 80 ? '#e3f2fd' : achRate >= 60 ? '#fff3e0' : '#ffebee';
+          b+=`<td style="font-weight:800;">${n2(r.totalWorked)}</td>`;
+          b+=`<td style="background:${achBg};font-weight:700;color:${achColor};" title="${r.person}님의 이 업무 달성: ${n2(r.totalWorked)}일 / 목표 ${n2(r.targetDays)}일">${achRate}%</td>`;
+          b+=`<td style="background:${utilBg};font-weight:700;color:${utilColor};" title="${r.person}님의 이 업무 투입: ${n2(r.totalWorked)}일 / 영업일 ${bizDays}일">${utilization}%</td>`;
           b+='</tr>';
         });
       });
@@ -4063,13 +4069,26 @@
       const dim = new Date(Y, M, 0).getDate();
       let bizDays = 0;
       for(let i=1; i<=dim; i++){ const dow=new Date(Y,M-1,i).getDay(); if(dow!==0 && dow!==6) bizDays++; }
+      
+      const achRate = r.achievementRate;
+      const achColor = achRate >= 100 ? '#2e7d32' : achRate >= 80 ? '#1976d2' : achRate >= 60 ? '#e65100' : '#d32f2f';
+      const achBg = achRate >= 100 ? '#e8f5e9' : achRate >= 80 ? '#e3f2fd' : achRate >= 60 ? '#fff3e0' : '#ffebee';
+      
       const utilization = bizDays > 0 ? Math.round((r.totalWorked / bizDays) * 100) : 0;
       const utilColor = utilization >= 100 ? '#d32f2f' : utilization >= 80 ? '#e65100' : utilization >= 50 ? '#1976d2' : '#757575';
+      const utilBg = utilization >= 100 ? '#ffebee' : utilization >= 80 ? '#fff3e0' : utilization >= 50 ? '#e3f2fd' : '#f5f5f5';
       
+      // 합계
       tds[tds.length-3].innerHTML = n2(r.totalWorked);
       tds[tds.length-3].style.fontWeight = '800';
-      tds[tds.length-2].innerHTML = `<span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span>`;
+      // 달성률
+      tds[tds.length-2].innerHTML = achRate + '%';
+      tds[tds.length-2].style.background = achBg;
+      tds[tds.length-2].style.color = achColor;
+      tds[tds.length-2].style.fontWeight = '700';
+      // 투입률
       tds[tds.length-1].innerHTML = utilization + '%';
+      tds[tds.length-1].style.background = utilBg;
       tds[tds.length-1].style.color = utilColor;
       tds[tds.length-1].style.fontWeight = '700';
     }
