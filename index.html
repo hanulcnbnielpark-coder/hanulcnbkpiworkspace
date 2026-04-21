@@ -803,7 +803,7 @@
     .pw-table thead th {
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 10;
       background: var(--bg-muted);
       color: var(--text-sub);
       padding: 11px 12px;
@@ -813,6 +813,7 @@
       border-bottom: 1px solid var(--border);
       border-right: 1px solid var(--border-light);
       white-space: nowrap;
+      box-shadow: 0 1px 0 var(--border);
     }
 
     .pw-table thead th:last-child {
@@ -885,13 +886,19 @@
       border-radius: 0;
       padding: 0;
       margin: 0;
+      position: relative;
     }
-    .day-input.plan-input::placeholder,
-    .day-input.actual-input::placeholder {
-      color: #d1d5db;
+    .day-input.plan-input::placeholder {
+      color: #64b5f6;
       font-size: 10px;
-      font-weight: 300;
-      opacity: 0.6;
+      font-weight: 600;
+      opacity: 1;
+    }
+    .day-input.actual-input::placeholder {
+      color: #81c784;
+      font-size: 10px;
+      font-weight: 600;
+      opacity: 1;
     }
     .day-input.plan-input:hover { background: #90caf9 !important; }
     .day-input.plan-input:focus { background: #64b5f6 !important; border: 1px solid #1976d2; z-index: 2; position: relative; color: #0d47a1 !important; }
@@ -1833,7 +1840,7 @@
             </div>
 
             <div class="pw-table-wrap">
-              <div class="table-scroll" id="monthlyScroll">
+              <div class="table-scroll" id="monthlyScroll" style="max-height: calc(100vh - 280px); overflow: auto;">
                 <table class="pw-table" id="monthlyTable">
                   <thead id="monthlyHead"></thead>
                   <tbody id="monthlyBody"></tbody>
@@ -2126,7 +2133,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.7.2';
+    const APP_VER = 'v3.7.3';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
