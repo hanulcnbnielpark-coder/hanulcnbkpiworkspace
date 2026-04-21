@@ -886,10 +886,17 @@
       padding: 0;
       margin: 0;
     }
-    .day-input.plan-input:hover { background: #bbdefb !important; }
-    .day-input.plan-input:focus { background: #90caf9 !important; border: 1px solid #1976d2; z-index: 2; position: relative; }
-    .day-input.actual-input:hover { background: #c8e6c9 !important; }
-    .day-input.actual-input:focus { background: #a5d6a7 !important; border: 1px solid #2e7d32; z-index: 2; position: relative; }
+    .day-input.plan-input::placeholder,
+    .day-input.actual-input::placeholder {
+      color: #d1d5db;
+      font-size: 10px;
+      font-weight: 300;
+      opacity: 0.6;
+    }
+    .day-input.plan-input:hover { background: #90caf9 !important; }
+    .day-input.plan-input:focus { background: #64b5f6 !important; border: 1px solid #1976d2; z-index: 2; position: relative; color: #0d47a1 !important; }
+    .day-input.actual-input:hover { background: #a5d6a7 !important; }
+    .day-input.actual-input:focus { background: #81c784 !important; border: 1px solid #2e7d32; z-index: 2; position: relative; color: #1b5e20 !important; }
 
     .day-input {
       width: 28px;
@@ -2119,7 +2126,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.7.0';
+    const APP_VER = 'v3.7.1';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2693,24 +2700,15 @@
       if(ps.options.length<=1){PROJ.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});}
       if(pm.options.length<=1){const filt=tf?.value?MEM.filter(m=>m.team===tf.value):MEM;filt.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;pm.appendChild(o);});}
       let d=DATA;if(ps.value)d=d.filter(r=>r.project===ps.value);if(tf?.value){const names=MEM.filter(m=>m.team===tf.value).map(m=>m.name);d=d.filter(r=>names.includes(r.person));}if(pm.value)d=d.filter(r=>r.person===pm.value);
-      let h='<tr><th style="width:28px;"></th><th style="text-align:center;min-width:130px;">업무</th><th style="min-width:70px;">담당자</th><th>목표</th><th style="background:#fff8e1;color:#f57f17;">마감일</th><th style="background:#e3f2fd;color:#1565c0;">마감<br>목표</th>';
+      let h='<tr><th style="width:28px;"></th><th style="text-align:center;min-width:130px;">업무</th><th style="min-width:70px;">담당자</th><th>목표</th>';
       for(let i=1;i<=dim;i++){const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;h+=`<th class="day-cell${we?' weekend':''}${isT&&i===td?' today':''}">${i}<br><span style="font-size:11px;opacity:0.5">${dn[dow]}</span></th>`;}
-      h+='<th>합계</th><th>달성률</th><th style="background:#fff3e0;color:#e65100;">투입률</th></tr>';document.getElementById('monthlyHead').innerHTML=h;
+      h+='<th>합계</th><th>달성률</th></tr>';document.getElementById('monthlyHead').innerHTML=h;
       const gr={};d.forEach(r=>{if(!gr[r.project])gr[r.project]=[];gr[r.project].push(r);});
       // ── 인별 일별 투입률 합계 계산 (전체 DATA 기준) ──
       const pds={};DATA.forEach(r=>{if(!pds[r.person])pds[r.person]={};for(let i=1;i<=dim;i++){if(!pds[r.person][i])pds[r.person][i]=0;pds[r.person][i]+=(r.days[i]||0);}});
       let b='';Object.entries(gr).forEach(([proj,rows])=>{
-        b+=`<tr class="summary-row"><td colspan="${dim+9}" style="text-align:left;padding-left:14px;font-weight:800;"><span>${proj}</span><button onclick="openAddModalWith('${proj.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-light);cursor:pointer;font-size:14px;padding:1px 8px;border-radius:6px;margin-left:10px;font-family:var(--font);" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-light)'"><i class="ri-add-line" style="font-size:14px;"></i> 행 추가</button></td></tr>`;
+        b+=`<tr class="summary-row"><td colspan="${dim+7}" style="text-align:left;padding-left:14px;font-weight:800;"><span>${proj}</span><button onclick="openAddModalWith('${proj.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-light);cursor:pointer;font-size:14px;padding:1px 8px;border-radius:6px;margin-left:10px;font-family:var(--font);" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-light)'"><i class="ri-add-line" style="font-size:14px;"></i> 행 추가</button></td></tr>`;
         rows.forEach(r=>{
-          const msDay=r.milestoneDay||0;
-          const msTgt=r.milestoneTarget||0;
-          let msRate=0, msWorked=0;
-          if(msDay>0){
-            for(let md=1;md<=msDay;md++)msWorked+=(r.days[md]||0);
-            const msT=msTgt||r.targetDays;
-            msRate=msT>0?Math.round((msWorked/msT)*100):0;
-          }
-
           b+='<tr>';
           b+=`<td style="padding:2px;text-align:center;"><button onclick="deleteDataRow(${r.planRowIndex||0},'${(r.yearMonth||'').replace(/'/g,"\\'")}','${(r.project||'').replace(/'/g,"\\'")}','${(r.task||'').replace(/'/g,"\\'")}','${(r.person||'').replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'" onmouseout="this.style.color='var(--text-light)';this.style.background='none'" title="삭제"><i class="ri-delete-bin-line"></i></button></td>`;
           b+=`<td><input class="day-input" style="width:100%;text-align:center;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.planRowIndex||0}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
@@ -2718,38 +2716,41 @@
           MEM.forEach(m=>{b+=`<option value="${m.name}"${m.name===r.person?' selected':''}>${m.name}</option>`;});
           b+=`</select></td>`;
           b+=`<td><input class="day-input" style="width:32px;" value="${r.targetDays}" data-row="${r.planRowIndex||0}" data-col="targetDays" onfocus="this.select()" onblur="hT(this)" onkeydown="nk(event,this)"></td>`;
-          const msDow=msDay?dn[new Date(Y,M-1,msDay).getDay()]:'';
-          b+=`<td style="background:#fff8e1;text-align:center;padding:2px;"><input class="day-input" style="width:32px;background:transparent;" value="${msDay||''}" placeholder="-" data-row="${r.planRowIndex||0}" data-col="milestoneDay" onfocus="this.select()" onblur="hMs(this)" onkeydown="nk(event,this)">${msDay?`<div style="font-size:10px;color:#f57f17;margin-top:-2px;line-height:1;">${msDow}</div>`:''}</td>`;
-          b+=`<td style="background:#e3f2fd;"><input class="day-input" style="width:32px;background:transparent;" value="${msTgt||''}" placeholder="-" data-row="${r.planRowIndex||0}" data-col="milestoneTarget" onfocus="this.select()" onblur="hMsT(this)" onkeydown="nk(event,this)"></td>`;
           for(let i=1;i<=dim;i++){
             const v=r.days[i]!==undefined?r.days[i]:'';
-            const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;const isMs=msDay===i;
+            const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;
             const daySum=pds[r.person]?.[i]||0;
             const curVal=r.days[i]||0;
             const isFull=daySum>=1&&curVal===0;
             const isComplete=daySum>=1&&curVal>0;
-            let cellSt=isMs?'background:#fff3cd;border:2px solid #ffc107;':isFull?'background:#f5f5f5;':'';
-            if(isComplete&&!isMs)cellSt='background:#e8f5e9;';
             const planVal = r.planDays&&r.planDays[i]!==undefined ? r.planDays[i] : '';
             const actualVal = r.actualDays&&r.actualDays[i]!==undefined ? r.actualDays[i] : '';
             const planDisplay = planVal===''?'':planVal;
             const actualDisplay = actualVal===''?'':actualVal;
-            const planColor = planVal===1?'#1565c0':planVal===0.5?'#0277bd':planVal===0.25?'#01579b':planVal===0.75?'#4527a0':'#90caf9';
-            const actualColor = actualVal===1?'#2e7d32':actualVal===0.5?'#e65100':actualVal===0.25?'#92400e':actualVal===0.75?'#5b21b6':'#bbb';
-            b+=`<td class="day-cell${we?' weekend':''}" style="padding:0;${isMs?'border:2px solid #ffc107;':''}">`;
+            // 계획: 파란 계열 (값 있으면 진한 파랑)
+            const planBg = planVal!=='' ? '#bbdefb' : '#f5fbff';
+            const planColor = planVal!=='' ? '#0d47a1' : '#b0bec5';
+            // 실적: 녹색 계열 (값 있으면 진한 녹색), 미달/초과에 따라 색 변경
+            let actualBg = '#f9fdf9';
+            let actualColor = '#c8e6c9';
+            if(actualVal !== ''){
+              if(actualVal >= 1){ actualBg = '#c8e6c9'; actualColor = '#1b5e20'; }
+              else if(actualVal >= 0.5){ actualBg = '#fff3e0'; actualColor = '#e65100'; }
+              else if(actualVal > 0){ actualBg = '#fff8e1'; actualColor = '#bf360c'; }
+            }
+            b+=`<td class="day-cell${we?' weekend':''}" style="padding:0;">`;
             b+=`<div style="display:flex;flex-direction:column;height:100%;">`;
-            // 계획 (상단, 옅은 파랑 배경)
-            b+=`<input class="day-input plan-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:#e3f2fd;color:${planColor};font-weight:${planVal!==''?'600':'400'};border-bottom:1px solid #bbdefb;" value="${planDisplay}" data-plan-row="${r.planRowIndex||0}" data-day="${i}" data-sheet="plan" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDP(this)" onkeydown="nk(event,this)" placeholder="계획">`;
-            // 실적 (하단, 옅은 녹색 배경)
-            b+=`<input class="day-input actual-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:${cellSt.includes('background')?cellSt.match(/background:([^;]+)/)[1]:'#f1f8e9'};color:${actualColor};font-weight:${actualVal!==''?'700':'400'};" value="${actualDisplay}" data-actual-row="${r.actualRowIndex||0}" data-day="${i}" data-sheet="actual" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDA(this)" onkeydown="nk(event,this)" placeholder="실적">`;
+            // 계획 (상단)
+            b+=`<input class="day-input plan-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:${planBg};color:${planColor};font-weight:${planVal!==''?'700':'400'};border-bottom:1px solid #cfd8dc;" value="${planDisplay}" data-plan-row="${r.planRowIndex||0}" data-day="${i}" data-sheet="plan" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDP(this)" onkeydown="nk(event,this)" placeholder="계">`;
+            // 실적 (하단)
+            b+=`<input class="day-input actual-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:${actualBg};color:${actualColor};font-weight:${actualVal!==''?'800':'400'};" value="${actualDisplay}" data-actual-row="${r.actualRowIndex||0}" data-day="${i}" data-sheet="actual" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDA(this)" onkeydown="nk(event,this)" placeholder="실">`;
             b+=`</div></td>`;
           }
           b+=`<td style="font-weight:800;">${n2(r.totalWorked)}</td><td><span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span></td>`;
-          b+=`<td style="background:#fff3e0;text-align:center;">${msDay>0?`<span class="rate-badge ${rc(msRate)}" title="${msDay}일까지 ${msWorked}/${msTgt||r.targetDays}">${msRate}%</span>`:'<span style="color:var(--text-light);font-size:12px;">-</span>'}</td>`;
           b+='</tr>';
         });
       });
-      if(!d.length)b=`<tr><td colspan="${dim+9}"><div class="empty-pw"><i class="ri-inbox-line"></i><p>데이터 없음</p><button class="pw-btn primary" onclick="openAddModal()"><i class="ri-add-line"></i> 등록</button></div></td></tr>`;
+      if(!d.length)b=`<tr><td colspan="${dim+7}"><div class="empty-pw"><i class="ri-inbox-line"></i><p>데이터 없음</p><button class="pw-btn primary" onclick="openAddModal()"><i class="ri-add-line"></i> 등록</button></div></td></tr>`;
       document.getElementById('monthlyBody').innerHTML=b;
     }
 
