@@ -877,6 +877,19 @@
     .pw-table .weekend {
       background: #fcfcfb;
     }
+    
+    /* 계획/실적 2층 셀 - hover시 강조 */
+    .day-input.plan-input,
+    .day-input.actual-input {
+      border: 1px solid transparent;
+      border-radius: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .day-input.plan-input:hover { background: #bbdefb !important; }
+    .day-input.plan-input:focus { background: #90caf9 !important; border: 1px solid #1976d2; z-index: 2; position: relative; }
+    .day-input.actual-input:hover { background: #c8e6c9 !important; }
+    .day-input.actual-input:focus { background: #a5d6a7 !important; border: 1px solid #2e7d32; z-index: 2; position: relative; }
 
     .day-input {
       width: 28px;
@@ -2106,7 +2119,7 @@
   <script>
     // ═══════════════════════════════════════════
     // KPI Workspace — Full Feature Set
-    const APP_VER = 'v3.6.9';
+    const APP_VER = 'v3.7.0';
     // ═══════════════════════════════════════════
     Chart.defaults.font.family = "'Pretendard Variable','Pretendard',sans-serif";
     Chart.defaults.font.size = 11;
@@ -2503,13 +2516,15 @@
       if(GAS_URL){
         const[d,p,m]=await Promise.all([apiG('getAll',{yearMonth:ym}),apiG('getProjects'),apiG('getMembers')]);
         DATA=d?.rows||[];PROJ=p?.projects||[];MEM=m?.members||[];
-        // ── 데이터 정규화: days 기준으로 totalWorked/achievementRate 재계산 (부동소수점/저장값 오류 방어) ──
+        // ── 데이터 정규화: actualDays 기준으로 totalWorked/achievementRate 재계산 ──
         DATA.forEach(r=>{
-          if(r.days && typeof r.days==='object'){
-            const sum=Object.values(r.days).reduce((s,v)=>s+(parseFloat(v)||0),0);
-            r.totalWorked=Math.round(sum*100)/100;
-            r.achievementRate=r.targetDays>0?Math.round((r.totalWorked/r.targetDays)*100):0;
-          }
+          // GAS가 보내준 구조 보정
+          if(!r.planDays) r.planDays = {};
+          if(!r.actualDays) r.actualDays = r.days || {};
+          if(!r.days) r.days = r.actualDays;
+          const sum = Object.values(r.actualDays).reduce((s,v)=>s+(parseFloat(v)||0), 0);
+          r.totalWorked = Math.round(sum*100)/100;
+          r.achievementRate = r.targetDays>0 ? Math.round((r.totalWorked/r.targetDays)*100) : 0;
         });
       } else{toast('서버 연결에 실패했습니다','error');}
       // Timesheet
@@ -2532,8 +2547,70 @@
       toast('데이터를 불러왔습니다','success');
     }
 
-    function scl(ri,col,val){const r=DATA.find(x=>x.rowIndex===ri);if(!r)return;if(col.startsWith('day_')){const d=parseInt(col.replace('day_',''));r.days[d]=val;r.totalWorked=Math.round(Object.values(r.days).reduce((s,v)=>s+v,0)*100)/100;r.achievementRate=r.targetDays>0?Math.round((r.totalWorked/r.targetDays)*100):0;}else if(col==='targetDays'){r.targetDays=val;r.achievementRate=val>0?Math.round((r.totalWorked/val)*100):0;}}
-    async function saveC(ri,col,val){scl(ri,col,val);if(GAS_URL)apiP({action:'saveCell',rowIndex:ri,column:col,value:Number(val)});if(VIEW==='overview')renderOV();}
+    // scl: 로컬 DATA 업데이트 (sheetType: 'plan' or 'actual')
+    function scl(planRowIndex, col, val, sheetType){
+      // DATA는 planRowIndex 기준으로 찾음 (merged 구조)
+      const r = DATA.find(x => x.planRowIndex === planRowIndex);
+      if(!r) return;
+      if(col.startsWith('day_')){
+        const d = parseInt(col.replace('day_',''));
+        if(sheetType === 'plan'){
+          if(!r.planDays) r.planDays = {};
+          if(val === '' || val === 0 || val === null) delete r.planDays[d];
+          else r.planDays[d] = val;
+        } else {
+          if(!r.actualDays) r.actualDays = {};
+          if(val === '' || val === 0 || val === null) delete r.actualDays[d];
+          else r.actualDays[d] = val;
+          // days는 actual의 별칭 (달성률 계산용)
+          r.days = r.actualDays;
+          r.totalWorked = Math.round(Object.values(r.actualDays).reduce((s,v)=>s+(v||0),0)*100)/100;
+          r.achievementRate = r.targetDays>0 ? Math.round((r.totalWorked/r.targetDays)*100) : 0;
+        }
+      } else if(col === 'targetDays'){
+        r.targetDays = val;
+        r.achievementRate = val>0 ? Math.round((r.totalWorked/val)*100) : 0;
+      } else if(col === 'milestoneDay'){
+        r.milestoneDay = val;
+      } else if(col === 'milestoneTarget'){
+        r.milestoneTarget = val;
+      } else if(col === 'task'){
+        r.task = val;
+      } else if(col === 'person'){
+        r.person = val;
+      }
+    }
+    
+    // saveC: 서버 저장 (sheetType 파라미터 추가)
+    async function saveC(planRowIndex, col, val, sheetType, meta){
+      sheetType = sheetType || 'plan';
+      scl(planRowIndex, col, val, sheetType);
+      if(GAS_URL){
+        const payload = {action:'saveCell', sheetType: sheetType, column: col, value: Number(val)};
+        if(sheetType === 'plan'){
+          payload.rowIndex = planRowIndex;
+        } else {
+          // 실적은 actualRowIndex를 써야 하지만, DATA에서 찾아서 전달
+          const r = DATA.find(x => x.planRowIndex === planRowIndex);
+          payload.rowIndex = r ? (r.actualRowIndex || 0) : 0;
+          // 실적 행이 없으면 메타 정보로 신규 생성
+          if(!payload.rowIndex && meta){
+            payload.yearMonth = meta.ym;
+            payload.project = meta.project;
+            payload.task = meta.task;
+            payload.person = meta.person;
+            payload.targetDays = meta.target || 0;
+          }
+        }
+        const res = await apiP(payload);
+        // 신규 생성됐으면 actualRowIndex 업데이트
+        if(res?.success && res.rowIndex && sheetType === 'actual'){
+          const r = DATA.find(x => x.planRowIndex === planRowIndex);
+          if(r) r.actualRowIndex = res.rowIndex;
+        }
+      }
+      if(VIEW==='overview') renderOV();
+    }
 
     // ─── View Management ───
     const viewMeta={
@@ -2635,15 +2712,15 @@
           }
 
           b+='<tr>';
-          b+=`<td style="padding:2px;text-align:center;"><button onclick="deleteDataRow(${r.rowIndex})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'" onmouseout="this.style.color='var(--text-light)';this.style.background='none'" title="삭제"><i class="ri-delete-bin-line"></i></button></td>`;
-          b+=`<td><input class="day-input" style="width:100%;text-align:center;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.rowIndex}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
-          b+=`<td style="min-width:70px;"><select class="day-input" style="width:100%;height:24px;font-size:14px;-webkit-appearance:none;padding:0 2px;" data-row="${r.rowIndex}" data-field="person" onchange="editMeta(this)">`;
+          b+=`<td style="padding:2px;text-align:center;"><button onclick="deleteDataRow(${r.planRowIndex||0},'${(r.yearMonth||'').replace(/'/g,"\\'")}','${(r.project||'').replace(/'/g,"\\'")}','${(r.task||'').replace(/'/g,"\\'")}','${(r.person||'').replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'" onmouseout="this.style.color='var(--text-light)';this.style.background='none'" title="삭제"><i class="ri-delete-bin-line"></i></button></td>`;
+          b+=`<td><input class="day-input" style="width:100%;text-align:center;height:24px;font-size:14px;" value="${String(r.task||'').replace(/"/g,'&quot;')}" data-row="${r.planRowIndex||0}" data-field="task" onblur="editMeta(this)" title="${String(r.task||'')}"></td>`;
+          b+=`<td style="min-width:70px;"><select class="day-input" style="width:100%;height:24px;font-size:14px;-webkit-appearance:none;padding:0 2px;" data-row="${r.planRowIndex||0}" data-field="person" onchange="editMeta(this)">`;
           MEM.forEach(m=>{b+=`<option value="${m.name}"${m.name===r.person?' selected':''}>${m.name}</option>`;});
           b+=`</select></td>`;
-          b+=`<td><input class="day-input" style="width:32px;" value="${r.targetDays}" data-row="${r.rowIndex}" data-col="targetDays" onfocus="this.select()" onblur="hT(this)" onkeydown="nk(event,this)"></td>`;
+          b+=`<td><input class="day-input" style="width:32px;" value="${r.targetDays}" data-row="${r.planRowIndex||0}" data-col="targetDays" onfocus="this.select()" onblur="hT(this)" onkeydown="nk(event,this)"></td>`;
           const msDow=msDay?dn[new Date(Y,M-1,msDay).getDay()]:'';
-          b+=`<td style="background:#fff8e1;text-align:center;padding:2px;"><input class="day-input" style="width:32px;background:transparent;" value="${msDay||''}" placeholder="-" data-row="${r.rowIndex}" data-col="milestoneDay" onfocus="this.select()" onblur="hMs(this)" onkeydown="nk(event,this)">${msDay?`<div style="font-size:10px;color:#f57f17;margin-top:-2px;line-height:1;">${msDow}</div>`:''}</td>`;
-          b+=`<td style="background:#e3f2fd;"><input class="day-input" style="width:32px;background:transparent;" value="${msTgt||''}" placeholder="-" data-row="${r.rowIndex}" data-col="milestoneTarget" onfocus="this.select()" onblur="hMsT(this)" onkeydown="nk(event,this)"></td>`;
+          b+=`<td style="background:#fff8e1;text-align:center;padding:2px;"><input class="day-input" style="width:32px;background:transparent;" value="${msDay||''}" placeholder="-" data-row="${r.planRowIndex||0}" data-col="milestoneDay" onfocus="this.select()" onblur="hMs(this)" onkeydown="nk(event,this)">${msDay?`<div style="font-size:10px;color:#f57f17;margin-top:-2px;line-height:1;">${msDow}</div>`:''}</td>`;
+          b+=`<td style="background:#e3f2fd;"><input class="day-input" style="width:32px;background:transparent;" value="${msTgt||''}" placeholder="-" data-row="${r.planRowIndex||0}" data-col="milestoneTarget" onfocus="this.select()" onblur="hMsT(this)" onkeydown="nk(event,this)"></td>`;
           for(let i=1;i<=dim;i++){
             const v=r.days[i]!==undefined?r.days[i]:'';
             const dow=new Date(Y,M-1,i).getDay();const we=dow===0||dow===6;const isMs=msDay===i;
@@ -2653,7 +2730,19 @@
             const isComplete=daySum>=1&&curVal>0;
             let cellSt=isMs?'background:#fff3cd;border:2px solid #ffc107;':isFull?'background:#f5f5f5;':'';
             if(isComplete&&!isMs)cellSt='background:#e8f5e9;';
-            b+=`<td class="day-cell${we?' weekend':''}" style="${cellSt}" ${isFull?`title="${r.person}님 ${i}일 투입률 = ${daySum} (꽉참)"`:''}><input class="day-input" ${isMs?'style="background:transparent;font-weight:700;"':isComplete?'style="background:transparent;color:#2e7d32;font-weight:600;"':isFull?'style="background:transparent;color:#bbb;"':''} data-val="${v}" value="${v}" data-row="${r.rowIndex}" data-day="${i}" onfocus="this.select()" onblur="hD(this)" onkeydown="nk(event,this)" ${isFull?'readonly':''}></td>`;
+            const planVal = r.planDays&&r.planDays[i]!==undefined ? r.planDays[i] : '';
+            const actualVal = r.actualDays&&r.actualDays[i]!==undefined ? r.actualDays[i] : '';
+            const planDisplay = planVal===''?'':planVal;
+            const actualDisplay = actualVal===''?'':actualVal;
+            const planColor = planVal===1?'#1565c0':planVal===0.5?'#0277bd':planVal===0.25?'#01579b':planVal===0.75?'#4527a0':'#90caf9';
+            const actualColor = actualVal===1?'#2e7d32':actualVal===0.5?'#e65100':actualVal===0.25?'#92400e':actualVal===0.75?'#5b21b6':'#bbb';
+            b+=`<td class="day-cell${we?' weekend':''}" style="padding:0;${isMs?'border:2px solid #ffc107;':''}">`;
+            b+=`<div style="display:flex;flex-direction:column;height:100%;">`;
+            // 계획 (상단, 옅은 파랑 배경)
+            b+=`<input class="day-input plan-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:#e3f2fd;color:${planColor};font-weight:${planVal!==''?'600':'400'};border-bottom:1px solid #bbdefb;" value="${planDisplay}" data-plan-row="${r.planRowIndex||0}" data-day="${i}" data-sheet="plan" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDP(this)" onkeydown="nk(event,this)" placeholder="계획">`;
+            // 실적 (하단, 옅은 녹색 배경)
+            b+=`<input class="day-input actual-input" style="width:100%;height:22px;text-align:center;font-size:12px;background:${cellSt.includes('background')?cellSt.match(/background:([^;]+)/)[1]:'#f1f8e9'};color:${actualColor};font-weight:${actualVal!==''?'700':'400'};" value="${actualDisplay}" data-actual-row="${r.actualRowIndex||0}" data-day="${i}" data-sheet="actual" data-ym="${r.yearMonth}" data-project="${(r.project||'').replace(/"/g,'&quot;')}" data-task="${(r.task||'').replace(/"/g,'&quot;')}" data-person="${(r.person||'').replace(/"/g,'&quot;')}" data-target="${r.targetDays}" onfocus="this.select()" onblur="hDA(this)" onkeydown="nk(event,this)" placeholder="실적">`;
+            b+=`</div></td>`;
           }
           b+=`<td style="font-weight:800;">${n2(r.totalWorked)}</td><td><span class="rate-badge ${rc(r.achievementRate)}">${r.achievementRate}%</span></td>`;
           b+=`<td style="background:#fff3e0;text-align:center;">${msDay>0?`<span class="rate-badge ${rc(msRate)}" title="${msDay}일까지 ${msWorked}/${msTgt||r.targetDays}">${msRate}%</span>`:'<span style="color:var(--text-light);font-size:12px;">-</span>'}</td>`;
@@ -2727,22 +2816,22 @@
     }
 
     // ── Row CRUD ──
-    async function deleteDataRow(rowIndex){
-      if(!confirm('이 업무 행을 삭제하시겠습니까?'))return;
-      const removed=DATA.find(r=>r.rowIndex===rowIndex);
-      DATA=DATA.filter(r=>r.rowIndex!==rowIndex);renderV();
+    async function deleteDataRow(planRowIndex, ym, project, task, person){
+      if(!confirm('이 업무 행을 삭제하시겠습니까?\n(계획/실적 모두 삭제됩니다)'))return;
+      const removed=DATA.find(r=>r.planRowIndex===planRowIndex);
+      DATA=DATA.filter(r=>r.planRowIndex!==planRowIndex);renderV();
       toast('행이 삭제되었습니다','success');
-      if(GAS_URL)apiP({action:'deleteRow',rowIndex}).then(r=>{if(r?.error){DATA.push(removed);renderV();toast('서버 삭제 실패','error');}});
+      if(GAS_URL)apiP({action:'deleteRow', planRowIndex: planRowIndex, yearMonth: ym, project: project, task: task, person: person}).then(r=>{if(r?.error){if(removed)DATA.push(removed);renderV();toast('서버 삭제 실패','error');}});
     }
 
     async function editMeta(el){
       const ri=parseInt(el.dataset.row), field=el.dataset.field, val=el.value;
-      const row=DATA.find(r=>r.rowIndex===ri);if(!row)return;
+      const row=DATA.find(r=>r.planRowIndex===ri);if(!row)return;
       const oldVal=row[field];
       row[field]=val;
       if(GAS_URL){
         const col=field==='task'?3:field==='person'?4:0;
-        if(col) apiP({action:'saveCell',rowIndex:ri,column:field,value:val});
+        if(col) apiP({action:'saveCell', sheetType:'plan', rowIndex:ri, column:field, value:val});
       }
       if(oldVal!==val) toast(`${field==='task'?'업무명':'담당자'} 수정됨`,'success');
     }
@@ -3926,22 +4015,81 @@
     // ─── Handlers ───
     // r2: 부동소수점 오차 방지용 반올림 (소수점 2자리)
     function r2(x){return Math.round(x*100)/100;}
-    function hD(el){let v=el.value.trim();if(v===''){el.dataset.val='';const ri=parseInt(el.dataset.row),day=parseInt(el.dataset.day);const r=DATA.find(x=>x.rowIndex===ri);if(r){delete r.days[day];r.totalWorked=r2(Object.values(r.days).reduce((s,vv)=>s+vv,0));r.achievementRate=r.targetDays>0?Math.round((r.totalWorked/r.targetDays)*100):0;}saveC(ri,`day_${day}`,0);renderMonthlyInput();return;}v=parseFloat(v);if(isNaN(v)||![0,0.25,0.5,0.75,1].includes(v)){toast('0, 0.25, 0.5, 0.75, 1 만 입력','error');el.value=el.dataset.val||'';return;}
-      // ── 일별 투입률 합계 검증 ──
-      const ri=parseInt(el.dataset.row),day=parseInt(el.dataset.day);
-      const curRow=DATA.find(x=>x.rowIndex===ri);
+    
+    // hDP: 계획(plan) 입력 핸들러
+    function hDP(el){
+      let v = el.value.trim();
+      const planRowIndex = parseInt(el.dataset.planRow) || 0;
+      const day = parseInt(el.dataset.day);
+      const meta = {
+        ym: el.dataset.ym,
+        project: el.dataset.project,
+        task: el.dataset.task,
+        person: el.dataset.person,
+        target: parseFloat(el.dataset.target) || 0
+      };
+      
+      if(v === ''){
+        saveC(planRowIndex, `day_${day}`, 0, 'plan', meta);
+        renderMonthlyInput();
+        return;
+      }
+      v = parseFloat(v);
+      if(isNaN(v) || ![0, 0.25, 0.5, 0.75, 1].includes(v)){
+        toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
+        el.value = '';
+        return;
+      }
+      saveC(planRowIndex, `day_${day}`, v, 'plan', meta);
+      renderMonthlyInput();
+    }
+    
+    // hDA: 실적(actual) 입력 핸들러
+    function hDA(el){
+      let v = el.value.trim();
+      const planRowIndex = parseInt(el.dataset.planRow) || 0;
+      const day = parseInt(el.dataset.day);
+      const meta = {
+        ym: el.dataset.ym,
+        project: el.dataset.project,
+        task: el.dataset.task,
+        person: el.dataset.person,
+        target: parseFloat(el.dataset.target) || 0
+      };
+      
+      if(v === ''){
+        saveC(planRowIndex, `day_${day}`, 0, 'actual', meta);
+        renderMonthlyInput();
+        return;
+      }
+      v = parseFloat(v);
+      if(isNaN(v) || ![0, 0.25, 0.5, 0.75, 1].includes(v)){
+        toast('0, 0.25, 0.5, 0.75, 1 만 입력', 'error');
+        el.value = '';
+        return;
+      }
+      // 일별 실적 합계 검증 (같은 사람의 다른 업무 실적과 합쳐서 1 초과 금지)
+      const curRow = DATA.find(x => x.planRowIndex === planRowIndex);
       if(curRow){
-        const person=curRow.person;
-        const otherSum=r2(DATA.filter(x=>x.person===person&&x.rowIndex!==ri).reduce((s,x)=>s+(x.days[day]||0),0));
-        if(r2(otherSum+v)>1){
-          toast(`${person}님의 ${day}일 투입률 합계가 1을 초과합니다 (기존 ${otherSum} + 입력 ${v} = ${r2(otherSum+v)})`,'error');
-          el.value=el.dataset.val||'';return;
+        const person = curRow.person;
+        const otherSum = r2(DATA.filter(x => x.person === person && x.planRowIndex !== planRowIndex)
+          .reduce((s, x) => s + ((x.actualDays && x.actualDays[day]) || 0), 0));
+        if(r2(otherSum + v) > 1){
+          toast(`${person}님의 ${day}일 실적 합계가 1을 초과합니다 (기존 ${otherSum} + 입력 ${v} = ${r2(otherSum+v)})`, 'error');
+          el.value = '';
+          return;
         }
       }
-      el.dataset.val=v;el.setAttribute('data-val',v);saveC(ri,`day_${day}`,v);renderMonthlyInput();}
-    function hT(el){const v=parseFloat(el.value)||0;saveC(parseInt(el.dataset.row),'targetDays',v);}
-    function hMs(el){const v=parseInt(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.rowIndex===ri);if(r){r.milestoneDay=v;}saveC(ri,'milestoneDay',v);renderMonthlyInput();}
-    function hMsT(el){const v=parseFloat(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.rowIndex===ri);if(r){r.milestoneTarget=v;}saveC(ri,'milestoneTarget',v);renderMonthlyInput();}
+      saveC(planRowIndex, `day_${day}`, v, 'actual', meta);
+      renderMonthlyInput();
+    }
+    
+    // 기존 hD는 호환성 유지 (실적 저장으로 연결 - 구식 코드 방어)
+    function hD(el){ return hDA(el); }
+    
+    function hT(el){const v=parseFloat(el.value)||0;saveC(parseInt(el.dataset.row),'targetDays',v,'plan');}
+    function hMs(el){const v=parseInt(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.planRowIndex===ri);if(r){r.milestoneDay=v;}saveC(ri,'milestoneDay',v,'plan');renderMonthlyInput();}
+    function hMsT(el){const v=parseFloat(el.value)||0;const ri=parseInt(el.dataset.row);const r=DATA.find(x=>x.planRowIndex===ri);if(r){r.milestoneTarget=v;}saveC(ri,'milestoneTarget',v,'plan');renderMonthlyInput();}
     function nk(e,el){if(e.key==='Enter'){el.blur();const n=el.closest('td')?.nextElementSibling?.querySelector('input');if(n)n.focus();}if(e.key==='Tab'){e.preventDefault();el.blur();const d=e.shiftKey?'previousElementSibling':'nextElementSibling';const n=el.closest('td')?.[d]?.querySelector('input');if(n)n.focus();}if(e.key==='ArrowDown'){const td=el.closest('td'),ci=[...td.parentElement.children].indexOf(td),nr=td.parentElement.nextElementSibling;if(nr){const t=nr.children[ci]?.querySelector('input');if(t){e.preventDefault();el.blur();t.focus();}}}if(e.key==='ArrowUp'){const td=el.closest('td'),ci=[...td.parentElement.children].indexOf(td),pr=td.parentElement.previousElementSibling;if(pr){const t=pr.children[ci]?.querySelector('input');if(t){e.preventDefault();el.blur();t.focus();}}}}
 
     // ─── Modal ───
@@ -4008,7 +4156,7 @@
     function chProjSt(i,st){PROJ[i].status=st;renderProjMgr();toast('상태 변경: '+PROJ[i].name+' → '+st,'success');if(GAS_URL)apiP({action:'updateProject',index:i,name:PROJ[i].name,status:st});}
     function delProj(i){if(!confirm(PROJ[i].name+' 프로젝트를 삭제하시겠습니까?'))return;const nm=PROJ[i].name;PROJ.splice(i,1);renderProjMgr();toast('삭제: '+nm,'success');if(GAS_URL)apiP({action:'deleteProject',name:nm});}
 
-    async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseInt(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}const newRow={rowIndex:DATA.length+2,yearMonth:ym,project:proj,task,person,targetDays:target,days:{},totalWorked:0,achievementRate:0};DATA.push(newRow);closeModal();document.getElementById('mdlTask').value='';renderV();toast('등록 완료','success');if(GAS_URL)apiP({action:'saveRow',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}}).then(r=>{if(r?.success&&r.rowIndex)newRow.rowIndex=r.rowIndex;if(r?.error)toast('서버 저장 실패','error');});}
+    async function submitAdd(){const ym=`${Y}-${String(M).padStart(2,'0')}`,proj=document.getElementById('mdlProject').value,task=document.getElementById('mdlTask').value,person=document.getElementById('mdlPerson').value,target=parseFloat(document.getElementById('mdlTargetDays').value)||0;if(!proj||!task||!person){toast('모든 필드를 입력하세요','error');return;}const newRow={planRowIndex:0,actualRowIndex:0,yearMonth:ym,project:proj,task,person,targetDays:target,planDays:{},actualDays:{},days:{},totalWorked:0,achievementRate:0};DATA.push(newRow);closeModal();document.getElementById('mdlTask').value='';renderV();toast('등록 완료','success');if(GAS_URL)apiP({action:'saveRow',sheetType:'plan',yearMonth:ym,project:proj,task,person,targetDays:target,days:{}}).then(r=>{if(r?.success&&r.rowIndex)newRow.planRowIndex=r.rowIndex;if(r?.error)toast('서버 저장 실패','error');});}
 
     // ─── Settings ───
     function saveGas(){GAS_URL=document.getElementById('gasIn').value.trim();setCk('gas_url',GAS_URL,365);if(GAS_URL){toast('GAS 연결됨','success');refreshData();}else{toast('URL을 입력하세요','error');}}
